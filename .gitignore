@@ -42,3 +42,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Flask/Development files (no longer needed)
+app.py
+templates/
+
+# Temporary files
+tmp/
