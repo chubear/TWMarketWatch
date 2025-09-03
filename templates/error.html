@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}錯誤 - 台股觀測指標{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-exclamation-circle"></i> 系統錯誤
+                </h3>
+            </div>
+            <div class="card-body text-center">
+                <div class="alert alert-danger">
+                    <h4 class="alert-heading">無法載入數據</h4>
+                    <p class="mb-0">{{ error_message }}</p>
+                </div>
+                
+                <div class="mt-4">
+                    <h5>可能的解決方案：</h5>
+                    <ul class="list-unstyled text-start">
+                        <li><i class="fas fa-check"></i> 確認 Excel 檔案是否存在</li>
+                        <li><i class="fas fa-check"></i> 檢查檔案權限設定</li>
+                        <li><i class="fas fa-check"></i> 確認檔案格式正確</li>
+                        <li><i class="fas fa-check"></i> 重新啟動應用程式</li>
+                    </ul>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-home"></i> 返回首頁
+                    </a>
+                    <a href="{{ url_for('refresh_data') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-sync-alt"></i> 重新載入
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}

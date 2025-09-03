@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}完整報表 - 台股觀測指標{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="text-center mb-4">股市經濟及市場指標 - 2025Q2</h1>
+        
+        <div class="text-center mb-3">
+            <a href="{{ url_for('refresh_data') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-sync-alt"></i> 重新載入數據
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Investment Decision Table -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-chart-line"></i> 國內股市當年度投資決策建議表
+                </h3>
+                <small class="text-light">範圍: A1:X61</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    {% if investment_decision_table %}
+                        {{ investment_decision_table|safe }}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            投資決策建議表數據無法載入
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Investment Analysis Table -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-analytics"></i> 國外股市當年度投資評等分析表
+                </h3>
+                <small class="text-light">範圍: A1:X55</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    {% if investment_analysis_table %}
+                        {{ investment_analysis_table|safe }}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            投資評等分析表數據無法載入
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Navigation -->
+<div class="row">
+    <div class="col-12 text-center">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('decision_only') }}" class="btn btn-outline-primary">
+                僅查看投資決策建議
+            </a>
+            <a href="{{ url_for('analysis_only') }}" class="btn btn-outline-success">
+                僅查看投資評等分析
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add some interactivity
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click-to-highlight functionality for table cells
+    const tables = document.querySelectorAll('table');
+    tables.forEach(table => {
+        table.addEventListener('click', function(e) {
+            if (e.target.tagName === 'TD' || e.target.tagName === 'TH') {
+                // Remove previous highlights
+                table.querySelectorAll('.cell-highlight').forEach(cell => {
+                    cell.classList.remove('cell-highlight');
+                });
+                // Add highlight to clicked cell
+                e.target.classList.add('cell-highlight');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

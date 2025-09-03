@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - 台股觀測指標{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">首頁</a></li>
+                <li class="breadcrumb-item active">{{ title }}</li>
+            </ol>
+        </nav>
+        
+        <h1 class="text-center mb-4">{{ title }}</h1>
+        
+        <div class="text-center mb-3">
+            <a href="{{ url_for('refresh_data') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-sync-alt"></i> 重新載入數據
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> 返回完整報表
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header {% if '決策' in title %}bg-primary{% else %}bg-success{% endif %} text-white">
+                <h3 class="card-title mb-0">
+                    {% if '決策' in title %}
+                        <i class="fas fa-chart-line"></i>
+                    {% else %}
+                        <i class="fas fa-analytics"></i>
+                    {% endif %}
+                    {{ title }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    {% if table_html %}
+                        {{ table_html|safe }}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 
+                            數據無法載入
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('decision_only') }}" class="btn btn-outline-primary {% if '決策' in title %}active{% endif %}">
+                投資決策建議
+            </a>
+            <a href="{{ url_for('analysis_only') }}" class="btn btn-outline-success {% if '評等' in title %}active{% endif %}">
+                投資評等分析
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click-to-highlight functionality for table cells
+    const table = document.querySelector('table');
+    if (table) {
+        table.addEventListener('click', function(e) {
+            if (e.target.tagName === 'TD' || e.target.tagName === 'TH') {
+                // Remove previous highlights
+                table.querySelectorAll('.cell-highlight').forEach(cell => {
+                    cell.classList.remove('cell-highlight');
+                });
+                // Add highlight to clicked cell
+                e.target.classList.add('cell-highlight');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
