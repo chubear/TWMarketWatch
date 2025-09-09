@@ -28,19 +28,19 @@ import os
 class CSVToReportGenerator:
     """Generate Excel report from CSV and JSON files"""
     
-    def __init__(self, value_file: str, score_file: str, profile_file: str, categories: dict):
+    def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict):
         """
         Initialize the generator with input files
         
         Args:
             value_file: Path to measure_value.csv
             score_file: Path to measure_score.csv  
-            profile_file: Path to measure_profile.json
+            measure_profile_file: Path to measure_profile.json
             categories: Dictionary of measure categories
         """
         self.value_file = value_file
         self.score_file = score_file
-        self.profile_file = profile_file
+        self.measure_profile_file = measure_profile_file
         self.categories = categories
         
     def clean_column_name(self, col_name: str) -> str:
@@ -52,7 +52,7 @@ class CSVToReportGenerator:
         Load and clean data from input files
         
         Returns:
-            Tuple of (value_df, score_df, profile_dict)
+            Tuple of (value_df, score_df, measure_profile_dict)
         """
         # Load CSV files with big5 encoding
         value_df = pd.read_csv(self.value_file, encoding='big5')
@@ -62,11 +62,11 @@ class CSVToReportGenerator:
         value_df.columns = [self.clean_column_name(col) for col in value_df.columns]
         score_df.columns = [self.clean_column_name(col) for col in score_df.columns]
         
-        # Load JSON profile with utf-8 encoding
-        with open(self.profile_file, 'r', encoding='utf-8') as f:
-            profile = json.load(f)
+        # Load JSON measure_profile with utf-8 encoding
+        with open(self.measure_profile_file, 'r', encoding='utf-8') as f:
+            measure_profile = json.load(f)
             
-        return value_df, score_df, profile
+        return value_df, score_df, measure_profile
     
     def get_measure_category(self, measure_id: str) -> str:
         """Get the category of a measure"""
@@ -75,15 +75,17 @@ class CSVToReportGenerator:
                 return category
         return "未分類"
     
-    def create_report_sheet(self, value_df: pd.DataFrame, score_df: pd.DataFrame, 
-                          profile: Dict) -> pd.DataFrame:
+    def create_report_sheet(self, 
+                            value_df: pd.DataFrame, 
+                            score_df: pd.DataFrame, 
+                            measure_profile: Dict) -> pd.DataFrame:
         """
         Create the main report dataframe with proper column layout
         
         Args:
             value_df: DataFrame with historical values
             score_df: DataFrame with scores
-            profile: Measure profile dictionary
+            measure_profile: Measure profile dictionary
             
         Returns:
             DataFrame ready for Excel export
@@ -97,11 +99,11 @@ class CSVToReportGenerator:
         measure_columns = [col for col in value_df.columns if col != 'Date']
         
         for measure_id in measure_columns:
-            if measure_id not in profile:
+            if measure_id not in measure_profile:
                 continue
                 
-            # Get measure name from profile
-            measure_name = profile[measure_id]['name']
+            # Get measure name from measure_profile
+            measure_name = measure_profile[measure_id]['name']
             
             # Get historical values
             historical_values = value_df[measure_id].tolist()
@@ -148,13 +150,27 @@ class CSVToReportGenerator:
         # Convert to DataFrame
         report_df = pd.DataFrame(report_data)
         
-        # Sort by category and then by measure name
-        category_order = ["總經面指標", "技術面指標", "評價面指標", "未分類"]
+        # Sort by category (as in categories.keys()) and then by the order in each category's list
+        category_order = list(self.categories.keys()) + ["未分類"]
+        measure_order_map = {}
+        for cat_idx, cat in enumerate(category_order):
+            measures = self.categories.get(cat, [])
+            for order_idx, measure_id in enumerate(measures):
+                measure_order_map[(cat, measure_id)] = order_idx
+
+        def get_measure_order(row):
+            cat = row['I']
+            mid = row['G']
+            if (cat, mid) in measure_order_map:
+                return measure_order_map[(cat, mid)]
+            return float('inf')
+
         report_df['category_order'] = report_df['I'].map(
             {cat: i for i, cat in enumerate(category_order)}
         )
-        report_df = report_df.sort_values(['category_order', 'H'])
-        report_df = report_df.drop('category_order', axis=1)
+        report_df['measure_order'] = report_df.apply(get_measure_order, axis=1)
+        report_df = report_df.sort_values(['category_order', 'measure_order'])
+        report_df = report_df.drop(['category_order', 'measure_order'], axis=1)
         
         return report_df
     
@@ -238,10 +254,10 @@ class CSVToReportGenerator:
             output_file: Output Excel file path
         """
         print("Loading data...")
-        value_df, score_df, profile = self.load_data()
+        value_df, score_df, measure_profile = self.load_data()
         
         print("Creating report sheet...")
-        report_df = self.create_report_sheet(value_df, score_df, profile)
+        report_df = self.create_report_sheet(value_df, score_df, measure_profile)
         
         print("Creating summary sheet...")
         summary_df = self.create_summary_sheet(report_df)
@@ -283,16 +299,32 @@ def main():
     # Input files
     value_file = "measure_value.csv"
     score_file = "measure_score.csv"
-    profile_file = "measure_profile.json"
-    
+    measure_profile_file = "measure_profile.json"
+    categories = {
+            "總經面指標": [
+                "台灣領先指標_id", "ISM製造業指數_id", "台灣外銷訂單_id", 
+                "台灣工業生產指數_id", "台灣貿易收支_id", "台灣零售銷售_id", 
+                "台灣失業率_id", "台灣CPI_id", "台灣M1B-M2_id"
+            ],
+            "技術面指標": [
+                "加權指數乖離率_id", "OTC指數乖離率_id", "加權指數MACD_id", 
+                "OTC指數MACD_id", "加權指數DIF_id", "加權指數ADX_id"
+            ],
+            "評價面指標": [
+                "加權指數本益比_id", "台灣50指數本益比_id", "台灣中型100指數本益比_id", 
+                "台灣高股息指數本益比_id", "OTC指數本益比_id", "加權指數股價淨值比_id", 
+                "台灣50指數股價淨值比_id", "台灣中型100指數股價淨值比_id", 
+                "台灣高股息指數股價淨值比_id", "OTC指數股價淨值比_id"
+            ]
+        }
     # Check if files exist
-    for file_path in [value_file, score_file, profile_file]:
+    for file_path in [value_file, score_file, measure_profile_file]:
         if not os.path.exists(file_path):
             print(f"Error: File not found: {file_path}")
             return
     
     # Generate report
-    generator = CSVToReportGenerator(value_file, score_file, profile_file)
+    generator = CSVToReportGenerator(value_file, score_file, measure_profile_file, categories)
     generator.generate_report()
 
 
