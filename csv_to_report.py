@@ -154,32 +154,36 @@ class CSVToReportGenerator:
         return report_df
 
 
-    def export_to_html(self, df: pd.DataFrame, filename: str = "report.html", add_style: bool = True) -> str:
+    def export_to_html(self, df: pd.DataFrame, filename: str = "report.html", 
+                       add_style: bool = True, 
+                       rename: Optional[Dict[str, str]] = None,
+                       col_mergecell: Optional[List[str]] = None) -> str:
         """
-        將 DataFrame 輸出為 HTML 表格，並針對相鄰且相同的 category 與 score_total 進行儲存格列合併(rowspan)。
+        將 DataFrame 輸出為 HTML 表格，並針對指定欄位進行儲存格列合併(rowspan)。
 
         參數：
-            df          : 來源 DataFrame（會依目前順序判斷相鄰合併）
-            filename    : 輸出 HTML 檔名
-            add_style   : 是否插入內嵌 CSS 樣式
+            df            : 來源 DataFrame（會依目前順序判斷相鄰合併）
+            filename      : 輸出 HTML 檔名
+            add_style     : 是否插入內嵌 CSS 樣式
+            rename        : 欄位重命名字典, e.g. {'category': '類別', 'measure_name': '指標名稱'}
+            col_mergecell : 要進行合併的欄位清單, e.g. ['category', 'score_total']
 
         回傳：
             產出的 HTML 字串（亦會寫入 filename）
         """
-        # 參數設定
-        category_col = "category"
-        total_col = "score_total"
-        table_id = "report-table"
-        # --- 基礎檢查 ---
-        if category_col not in df.columns:
-            raise ValueError(f"'{category_col}' 欄位不存在於 df.columns")
-        if total_col not in df.columns:
-            raise ValueError(f"'{total_col}' 欄位不存在於 df.columns")
-
-        # 為了相等性判斷一致，先把 NaN 轉為空字串（不改動原 df）
+        # 製作副本並應用重命名
         _df = df.copy()
-        _df[category_col] = _df[category_col].fillna("")
-        _df[total_col] = _df[total_col].fillna("")
+        if rename:
+            _df = _df.rename(columns=rename)
+        
+        # 設定參數
+        table_id = "report-table"
+        merge_cols = col_mergecell if col_mergecell else []
+
+        
+        # 為了相等性判斷一致，先把 NaN 轉為空字串
+        for col in _df.columns:
+            _df[col] = _df[col].fillna("")
 
         # --- 計算連續區段的 rowspan 起點與長度 ---
         def compute_runs(series: pd.Series) -> Dict[int, int]:
@@ -194,10 +198,17 @@ class CSVToReportGenerator:
                 i = j
             return runs
 
-        cat_runs = compute_runs(_df[category_col])
-        tot_runs = compute_runs(_df[total_col])
+        # 計算每個要合併的欄位的連續區段
+        merge_runs = {}
+        for col_name in merge_cols:
+            # 檢查原始欄名是否存在於原始 DataFrame
+            if col_name in df.columns:
+                # 取得重命名後的欄名
+                renamed_col = rename.get(col_name, col_name) if rename else col_name
+                if renamed_col in _df.columns:
+                    merge_runs[renamed_col] = compute_runs(_df[renamed_col])
 
-        # --- 準備輸出欄順序：維持原 df 欄位順序 ---
+        # --- 準備輸出欄順序：維持重命名後的 df 欄位順序 ---
         columns: List[str] = list(_df.columns)
 
         # --- 內嵌樣式（可關閉或自行覆寫） ---
@@ -245,24 +256,19 @@ class CSVToReportGenerator:
             tds = []
 
             for col in columns:
-                val = _df.iloc[r][_df.columns.get_loc(col)]
+                col_index = _df.columns.get_loc(col)
+                val = _df.iloc[r, col_index]
                 txt = "" if pd.isna(val) else str(val)
                 esc = ihtml.escape(txt)
 
-                # 只對 category_col / total_col 處理 rowspan；其他照常輸出
-                if col == category_col:
+                # 檢查是否為需要合併的欄位
+                if col in merge_runs:
                     # 只有段落起點才輸出 <td rowspan="...">
-                    if r in cat_runs:
-                        rs = cat_runs[r]
+                    if r in merge_runs[col]:
+                        rs = merge_runs[col][r]
                         tds.append(f'<td rowspan="{rs}">{esc}</td>')
                     else:
                         # 非起點列就跳過（由起點列的 rowspan 覆蓋）
-                        pass
-                elif col == total_col:
-                    if r in tot_runs:
-                        rs = tot_runs[r]
-                        tds.append(f'<td rowspan="{rs}">{esc}</td>')
-                    else:
                         pass
                 else:
                     tds.append(f"<td>{esc}</td>")
@@ -293,21 +299,50 @@ class CSVToReportGenerator:
         return html
 
 
-    def export_to_excel(self, df: pd.DataFrame, filename: str = "output.xlsx"):
+    def export_to_excel(self, df: pd.DataFrame, filename: str = "output.xlsx", 
+                        rename: Optional[Dict[str, str]] = None, 
+                        col_mergecell: Optional[List[str]] = None):
+        """
+        Export DataFrame to Excel with optional header renaming and configurable cell merging
+        
+        Args:
+            df: DataFrame to export
+            filename: Output Excel filename
+            rename: Dictionary to rename column headers, e.g. {'category': '類別', 'measure_name': '指標名稱'}
+            col_mergecell: List of column names to apply cell merging, e.g. ['category', 'score_total']
+        """
+        # 製作副本以避免修改原 DataFrame
+        output_df = df.copy()
+        
+        # 應用列名重命名
+        if rename:
+            output_df = output_df.rename(columns=rename)
+        
         # 先輸出到 Excel
-        df.to_excel(filename, index=False)
+        output_df.to_excel(filename, index=False)
 
+        # 如果沒有指定合併欄位，則不進行合併
+        if not col_mergecell:
+            print(f"已輸出完成：{filename}")
+            return
 
         # 讀取 Excel，進行合併
         wb = openpyxl.load_workbook(filename)
         ws = wb.active
 
-        # 找出欄位位置
-        category_col = df.columns.get_loc("category") + 1  # 轉為 Excel index (從 1 開始)
-        score_total_col = df.columns.get_loc("score_total") + 1
+        # 找出要合併的欄位位置
+        merge_columns = []
+        for col_name in col_mergecell:
+            # 檢查原始欄名是否存在
+            if col_name in df.columns:
+                # 取得重命名後的欄名
+                renamed_col = rename.get(col_name, col_name) if rename else col_name
+                if renamed_col in output_df.columns:
+                    col_index = output_df.columns.get_loc(renamed_col) + 1  # 轉為 Excel index (從 1 開始)
+                    merge_columns.append(col_index)
 
         start_row = 2  # 第一列是標題，從第二列開始
-        for col in [category_col, score_total_col]:
+        for col in merge_columns:
             prev_val = ws.cell(row=start_row, column=col).value
             merge_start = start_row
 
@@ -344,11 +379,12 @@ class CSVToReportGenerator:
         df = df.set_index(date_col).resample(frequency).last().reset_index()
         return df
         
-    def generate_report(self, display_period: tuple ,output_file: str = "report_output.html"):
+    def generate_report(self, display_period: tuple, output_file: str = "report_output.html"):
         """
-        Generate the complete  Html report
+        Generate the complete Html report
         
         Args:
+            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings
             output_file: Output html file path
         """
         print("Loading data...")
@@ -363,10 +399,13 @@ class CSVToReportGenerator:
         report_df = self.create_report_sheet(display_period, value_df, score_df, measure_profile)
 
         print("exporting to HTML...")
-        self.export_to_html(report_df, output_file)
+        # 使用預設的合併欄位以維持向後相容性
+        default_col_mergecell = ['category', 'score_total']
+        self.export_to_html(report_df, output_file, col_mergecell=default_col_mergecell)
 
         print("Exporting to Excel...")
-        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"))
+        # 使用預設的合併欄位以維持向後相容性
+        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), col_mergecell=default_col_mergecell)
 
 def main():
     """Main function to run the report generator"""
