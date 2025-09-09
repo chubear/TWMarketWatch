@@ -29,7 +29,7 @@ class CSVToReportGenerator:
     """Generate Excel report from CSV and JSON files"""
     
     def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict,
-                  frequency: str = 'M'):
+                  frequency: str = 'ME'):
         """
         Initialize the generator with input files
         
@@ -419,9 +419,9 @@ def main():
     
     # Input
     display_period = ('2024/12/1',datetime.now().strftime('%Y/%m/%d'))
-    value_file = "measure_value.csv"
-    score_file = "measure_score.csv"
-    measure_profile_file = "measure_profile.json"
+    value_file = "data/measure_value.csv"
+    score_file = "data/measure_score.csv"
+    measure_profile_file = "data/measure_profile.json"
     categories = {
             "總經面指標": [
                 "台灣領先指標_id", "ISM製造業指數_id", "台灣外銷訂單_id", 
