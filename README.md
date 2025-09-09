@@ -1,76 +1,72 @@
-# TWMarketWatch
-台股觀測指標
+# CSV to Report Generator Usage Guide
 
-## 專案介紹
-本專案提供台灣證券交易所(TWSE)每日收盤價爬蟲功能，能夠從證交所OpenAPI獲取股票市場資料。
+## Overview
+The `csv_to_report.py` script generates Excel reports from CSV data files and JSON measure profiles.
 
-## 功能特色
-- 📈 獲取每日股票收盤價資料
-- 📊 支援全市場或個股資料查詢
-- 💾 自動儲存為CSV格式
-- 📱 市場概況分析
-- 🔄 網路連線失敗時自動切換至模擬資料模式
+## Input Files Required
+1. **measure_value.csv** - Historical values for each measure (big5 encoding)
+2. **measure_score.csv** - Scores for each measure (big5 encoding)  
+3. **measure_profile.json** - Measure metadata with name and unit (utf-8 encoding)
 
-## 安裝與設定
+## Output
+**report_output.xlsx** with two sheets:
+- **Report**: Detailed measure data with historical values, latest values, and scores
+- **Summary**: Category totals showing score sums for each measure category
 
-### 1. 安裝相依套件
+## Usage
+
+### Basic Usage
 ```bash
-pip install -r requirements.txt
+python csv_to_report.py
 ```
 
-### 2. 基本使用
+### Programmatic Usage
 ```python
-from twse_crawler_demo import TWStockCrawlerDemo
+from csv_to_report import CSVToReportGenerator
 
-# 建立爬蟲實例
-crawler = TWStockCrawlerDemo()
+# Create generator
+generator = CSVToReportGenerator(
+    "measure_value.csv", 
+    "measure_score.csv", 
+    "measure_profile.json"
+)
 
-# 獲取今日市場收盤價
-market_data = crawler.get_market_closing_prices()
-print(market_data)
-
-# 儲存為CSV檔案
-crawler.save_to_csv(market_data)
+# Generate report
+generator.generate_report("custom_output.xlsx")
 ```
 
-## 使用範例
+## Report Structure
 
-### 執行完整示範
+### Report Sheet Layout
+- **Column G**: 指標ID (Measure ID)
+- **Column H**: 指標名稱 (Measure Name from profile)
+- **Column I**: 面向分類 (Category classification)
+- **Columns J-P**: 歷史數值 (Historical values from CSV)
+- **Column W**: 最新數值 (Latest value)
+- **Column X**: 分數 (Latest score)
+
+### Categories
+Measures are automatically classified into three categories:
+- **總經面指標** (Macro-economic indicators): 9 measures
+- **技術面指標** (Technical indicators): 6 measures  
+- **評價面指標** (Valuation indicators): 10 measures
+
+### Summary Sheet
+Shows total scores for each category with measure counts.
+
+## Testing
+Run the test script to verify functionality:
 ```bash
-python twse_crawler_demo.py
+python test_csv_to_report.py
 ```
 
-### 執行使用範例
-```bash
-python example_usage.py
-```
+## Requirements
+- pandas >= 2.0.0
+- openpyxl >= 3.1.0
+- json5 >= 0.9.0
 
-## 資料來源
-- 台灣證券交易所OpenAPI
-- 當API無法連線時會自動切換至模擬資料模式進行展示
-
-## 輸出格式
-爬蟲會產生包含以下欄位的CSV檔案：
-- 股票代碼
-- 股票名稱
-- 收盤價
-- 漲跌
-- 漲跌幅
-- 開盤價
-- 最高價
-- 最低價
-- 成交量
-
-## 檔案說明
-- `twse_crawler.py` - 基本爬蟲模組
-- `twse_crawler_demo.py` - 含模擬資料的示範版本
-- `example_usage.py` - 使用範例
-- `requirements.txt` - 相依套件清單
-
-## 注意事項
-- 證交所API僅在交易日提供當日資料
-- 建議在API請求間加入適當延遲避免過度請求
-- 模擬資料僅供展示功能使用
-
-## 授權
-本專案僅供學習研究使用
+The script automatically handles:
+- Big5 encoding for CSV files
+- UTF-8 encoding for JSON files
+- Column name cleaning (removes extra spaces and newlines)
+- Proper Excel formatting with headers and styling
