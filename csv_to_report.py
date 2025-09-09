@@ -410,15 +410,15 @@ class CSVToReportGenerator:
         default_col_mergecell = ['category', 'score_total']
         self.export_to_html(report_df, output_file, rename=rename_dict, col_mergecell=default_col_mergecell)
 
-        print("Exporting to Excel...")
-        # 使用預設的合併欄位以維持向後相容性
-        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), rename=rename_dict, col_mergecell=default_col_mergecell)
+        # print("Exporting to Excel...")
+        # # 使用預設的合併欄位以維持向後相容性
+        # self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), rename=rename_dict, col_mergecell=default_col_mergecell)
 
 def main():
     """Main function to run the report generator"""
     
     # Input
-    display_period = ('2024/12/1','2025/7/31')
+    display_period = ('2024/12/1',datetime.now().strftime('%Y/%m/%d'))
     value_file = "measure_value.csv"
     score_file = "measure_score.csv"
     measure_profile_file = "measure_profile.json"
@@ -447,7 +447,7 @@ def main():
     
     # Generate report
     generator = CSVToReportGenerator(value_file, score_file, measure_profile_file, categories)
-    generator.generate_report(display_period)
+    generator.generate_report(display_period, output_file="docs/index.html")
 
 
 if __name__ == "__main__":
