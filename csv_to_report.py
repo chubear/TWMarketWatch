@@ -28,7 +28,7 @@ import os
 class CSVToReportGenerator:
     """Generate Excel report from CSV and JSON files"""
     
-    def __init__(self, value_file: str, score_file: str, profile_file: str):
+    def __init__(self, value_file: str, score_file: str, profile_file: str, categories: dict):
         """
         Initialize the generator with input files
         
@@ -36,29 +36,12 @@ class CSVToReportGenerator:
             value_file: Path to measure_value.csv
             score_file: Path to measure_score.csv  
             profile_file: Path to measure_profile.json
+            categories: Dictionary of measure categories
         """
         self.value_file = value_file
         self.score_file = score_file
         self.profile_file = profile_file
-        
-        # Define measure categories
-        self.categories = {
-            "總經面指標": [
-                "台灣領先指標_id", "ISM製造業指數_id", "台灣外銷訂單_id", 
-                "台灣工業生產指數_id", "台灣貿易收支_id", "台灣零售銷售_id", 
-                "台灣失業率_id", "台灣CPI_id", "台灣M1B-M2_id"
-            ],
-            "技術面指標": [
-                "加權指數乖離率_id", "OTC指數乖離率_id", "加權指數MACD_id", 
-                "OTC指數MACD_id", "加權指數DIF_id", "加權指數ADX_id"
-            ],
-            "評價面指標": [
-                "加權指數本益比_id", "台灣50指數本益比_id", "台灣中型100指數本益比_id", 
-                "台灣高股息指數本益比_id", "OTC指數本益比_id", "加權指數股價淨值比_id", 
-                "台灣50指數股價淨值比_id", "台灣中型100指數股價淨值比_id", 
-                "台灣高股息指數股價淨值比_id", "OTC指數股價淨值比_id"
-            ]
-        }
+        self.categories = categories
         
     def clean_column_name(self, col_name: str) -> str:
         """Clean column names by removing extra spaces and newlines"""
