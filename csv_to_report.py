@@ -18,18 +18,18 @@ Output:
 import pandas as pd
 import json
 import openpyxl
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, PatternFill
 from openpyxl.utils.dataframe import dataframe_to_rows
 from typing import Dict, List, Tuple
 import os
-
+from datetime import datetime
+import html as ihtml
+from typing import Dict, List, Optional
 
 class CSVToReportGenerator:
     """Generate Excel report from CSV and JSON files"""
     
     def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict,
-                 display_period: tuple = None, frequency: str = 'M'):
+                  frequency: str = 'M'):
         """
         Initialize the generator with input files
         
@@ -45,21 +45,14 @@ class CSVToReportGenerator:
         self.score_file = score_file
         self.measure_profile_file = measure_profile_file
         self.categories = categories
-        # 預設顯示區間: 去年底~今日
-        import datetime
-        today = datetime.date.today()
-        last_year_end = datetime.date(today.year - 1, 12, 31)
-        if display_period is None:
-            self.display_period = (last_year_end.strftime('%Y/%m/%d'), today.strftime('%Y/%m/%d'))
-        else:
-            self.display_period = display_period
+
         self.frequency = frequency
         
     def clean_column_name(self, col_name: str) -> str:
         """Clean column names by removing extra spaces and newlines"""
         return col_name.strip().replace('\n', '')
 
-    def load_data(self, frequency: str = "M") -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
+    def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
         """
         Load and clean data from input files
         
@@ -69,6 +62,12 @@ class CSVToReportGenerator:
         # Load CSV files with big5 encoding
         value_df = pd.read_csv(self.value_file, encoding='big5')
         score_df = pd.read_csv(self.score_file, encoding='big5')
+        # Ensure 'Date' column is present
+        if 'Date' not in value_df.columns or 'Date' not in score_df.columns:
+            raise ValueError("Both CSV files must contain a 'Date' column.")
+        #Date column should be in datetime format
+        value_df['Date'] = pd.to_datetime(value_df['Date'])
+        score_df['Date'] = pd.to_datetime(score_df['Date'])
 
         # Clean column names
         value_df.columns = [self.clean_column_name(col) for col in value_df.columns]
@@ -88,6 +87,7 @@ class CSVToReportGenerator:
         return "未分類"
     
     def create_report_sheet(self, 
+                            display_period: tuple,
                             value_df: pd.DataFrame, 
                             score_df: pd.DataFrame, 
                             measure_profile: Dict) -> pd.DataFrame:
@@ -95,16 +95,21 @@ class CSVToReportGenerator:
         Create the main report dataframe with proper column layout
         
         Args:
+            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings
             value_df: DataFrame with historical values
             score_df: DataFrame with scores
             measure_profile: Measure profile dictionary
             
         Returns:
-            DataFrame ready for Excel export
+            DataFrame ready for display
         """
         report_data = []
-        
-        # Get date columns for historical values (J~V would be 13 columns)
+        # filter value_df and score_df by display_period
+        start_date, end_date = pd.to_datetime(display_period[0]), pd.to_datetime(display_period[1])
+        value_df = value_df[(pd.to_datetime(value_df['Date']) >= start_date) & (pd.to_datetime(value_df['Date']) <= end_date)]
+        score_df = score_df[(pd.to_datetime(score_df['Date']) >= start_date) & (pd.to_datetime(score_df['Date']) <= end_date)]
+
+        # Get date columns for historical values
         date_columns = value_df['Date'].tolist()
         
         # Process each measure
@@ -112,184 +117,239 @@ class CSVToReportGenerator:
         
         for measure_id in measure_columns:
             if measure_id not in measure_profile:
-                continue
-                
-            # Get measure name from measure_profile
-            measure_name = measure_profile[measure_id]['name']
-            
+                continue               
+           
             # Get historical values
-            historical_values = value_df[measure_id].tolist()
-            
-            # Get latest value and score
-            latest_value = value_df[measure_id].iloc[-1]
-            latest_score = score_df[measure_id].iloc[-1]
-            
-            # Get category
-            category = self.get_measure_category(measure_id)
-            
-            # Create row data following the specified column layout
-            # A-G: Empty columns for flexibility
-            # H: 指標名稱 (measure name)
-            # I: 面向分類 (category)
-            # J~V: 歷史數值 (historical values)
-            # W: 最新數值 (latest value)
-            # X: 分數 (score)
-            
+            historical_values = value_df[measure_id].tolist()            
+           
             row = {
-                'A': '',
-                'B': '',
-                'C': '',
-                'D': '',
-                'E': '',
-                'F': '',
-                'G': measure_id,  # 指標ID for reference
-                'H': measure_name,  # 指標名稱
-                'I': category,  # 面向分類
+                'category': self.get_measure_category(measure_id),
+                'measure_name': measure_profile[measure_id]['name'],
+                'unit': measure_profile[measure_id].get('unit', ''),
             }
-            
-            # Add historical values (columns J~V, max 13 columns)
-            col_letters = ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V']
-            for i, (date, value) in enumerate(zip(date_columns, historical_values)):
-                if i < len(col_letters):
-                    row[col_letters[i]] = value
-                    
-            # W: Latest value, X: Score
-            row['W'] = latest_value
-            row['X'] = latest_score
-                
+
+            for date, value in zip(date_columns, historical_values):
+                row[datetime.strftime(date, '%Y-%m-%d')] = value
+
+            row['score'] = score_df[measure_id].iloc[-1]                
             report_data.append(row)
         
+
         # Convert to DataFrame
         report_df = pd.DataFrame(report_data)
-        
+        # sum of scores by category
+        report_df['score_total'] = report_df.groupby('category')['score'].transform('sum')
+
         # Sort by category (as in categories.keys()) and then by the order in each category's list
-        category_order = list(self.categories.keys()) + ["未分類"]
-        measure_order_map = {}
-        for cat_idx, cat in enumerate(category_order):
-            measures = self.categories.get(cat, [])
-            for order_idx, measure_id in enumerate(measures):
-                measure_order_map[(cat, measure_id)] = order_idx
+        category_order = {cat: i for i, cat in enumerate(self.categories.keys())}
+        measure_order = {}
+        for cat, measures in self.categories.items():
+            for i, measure in enumerate(measures):
+                measure_order[measure] = i  
+        report_df['category_order'] = report_df['category'].map(category_order).fillna(999)
+        report_df['measure_order'] = report_df['measure_name'].map(measure_order).fillna(999)
+        report_df = report_df.sort_values(by=['category_order', 'measure_order'])
+        report_df = report_df.drop(columns=['category_order', 'measure_order'])
 
-        def get_measure_order(row):
-            cat = row['I']
-            mid = row['G']
-            if (cat, mid) in measure_order_map:
-                return measure_order_map[(cat, mid)]
-            return float('inf')
-
-        report_df['category_order'] = report_df['I'].map(
-            {cat: i for i, cat in enumerate(category_order)}
-        )
-        report_df['measure_order'] = report_df.apply(get_measure_order, axis=1)
-        report_df = report_df.sort_values(['category_order', 'measure_order'])
-        report_df = report_df.drop(['category_order', 'measure_order'], axis=1)
-        
         return report_df
-    
-    def create_summary_sheet(self, report_df: pd.DataFrame) -> pd.DataFrame:
+
+
+    def export_to_html(self, df: pd.DataFrame, filename: str = "report.html", add_style: bool = True) -> str:
         """
-        Create summary sheet with category score totals
-        
-        Args:
-            report_df: Main report dataframe
-            
-        Returns:
-            Summary DataFrame
+        將 DataFrame 輸出為 HTML 表格，並針對相鄰且相同的 category 與 score_total 進行儲存格列合併(rowspan)。
+
+        參數：
+            df          : 來源 DataFrame（會依目前順序判斷相鄰合併）
+            filename    : 輸出 HTML 檔名
+            add_style   : 是否插入內嵌 CSS 樣式
+
+        回傳：
+            產出的 HTML 字串（亦會寫入 filename）
         """
-        summary_data = []
-        
-        for category in ["總經面指標", "技術面指標", "評價面指標"]:
-            category_df = report_df[report_df['I'] == category]
-            total_score = category_df['X'].sum()
-            
-            summary_data.append({
-                '面向': category,
-                '分數總和': total_score,
-                '指標數量': len(category_df)
-            })
-        
-        return pd.DataFrame(summary_data)
-    
-    def format_excel_sheet(self, ws, df: pd.DataFrame, sheet_name: str):
-        """Format Excel sheet with headers and styling"""
-        
-        # Add proper column headers for Report sheet
-        if sheet_name == "Report":
-            # Set static headers
-            headers = {
-                'A': '', 'B': '', 'C': '', 'D': '', 'E': '', 'F': '',
-                'G': '指標ID', 'H': '指標名稱', 'I': '面向分類',
-                'W': '最新數值', 'X': '分數'
-            }
-            # 動態產生J~V等日期欄位
-            import pandas as pd
-            from datetime import datetime
-            import calendar
-            start_str, end_str = self.display_period
-            freq = self.frequency
-            start = pd.to_datetime(start_str)
-            end = pd.to_datetime(end_str)
-            date_labels = []
-            if freq == '月':
-                # 產生每月最後一天
-                cur = start
-                while cur <= end:
-                    last_day = cur.replace(day=calendar.monthrange(cur.year, cur.month)[1])
-                    if last_day > end:
-                        last_day = end
-                    date_labels.append(last_day.strftime('%Y/%m/%d'))
-                    # 下個月
-                    if cur.month == 12:
-                        cur = cur.replace(year=cur.year+1, month=1, day=1)
+        # 參數設定
+        category_col = "category"
+        total_col = "score_total"
+        table_id = "report-table"
+        # --- 基礎檢查 ---
+        if category_col not in df.columns:
+            raise ValueError(f"'{category_col}' 欄位不存在於 df.columns")
+        if total_col not in df.columns:
+            raise ValueError(f"'{total_col}' 欄位不存在於 df.columns")
+
+        # 為了相等性判斷一致，先把 NaN 轉為空字串（不改動原 df）
+        _df = df.copy()
+        _df[category_col] = _df[category_col].fillna("")
+        _df[total_col] = _df[total_col].fillna("")
+
+        # --- 計算連續區段的 rowspan 起點與長度 ---
+        def compute_runs(series: pd.Series) -> Dict[int, int]:
+            """回傳 {起始列索引: 連續長度} 只記錄每段起始列"""
+            runs = {}
+            i, n = 0, len(series)
+            while i < n:
+                j = i + 1
+                while j < n and series.iloc[j] == series.iloc[i]:
+                    j += 1
+                runs[i] = j - i
+                i = j
+            return runs
+
+        cat_runs = compute_runs(_df[category_col])
+        tot_runs = compute_runs(_df[total_col])
+
+        # --- 準備輸出欄順序：維持原 df 欄位順序 ---
+        columns: List[str] = list(_df.columns)
+
+        # --- 內嵌樣式（可關閉或自行覆寫） ---
+        style_block = ""
+        if add_style:
+            style_block = f"""
+    <style>
+    table#{table_id} {{
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+        word-wrap: break-word;
+    }}
+    table#{table_id} th, table#{table_id} td {{
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        vertical-align: middle;
+        text-align: center;
+    }}
+    table#{table_id} thead th {{
+        background: #f4f6f8;
+        font-weight: 600;
+    }}
+    table#{table_id} tbody tr:nth-child(even) {{
+        background: #fafafa;
+    }}
+    /* sticky header（如不需要可刪除） */
+    table#{table_id} thead th {{
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }}
+    </style>
+    """
+
+        # --- 建立表頭 ---
+        thead_cells = "".join(f"<th>{ihtml.escape(str(col))}</th>" for col in columns)
+        thead_html = f"<thead><tr>{thead_cells}</tr></thead>"
+
+        # --- 建立表身（處理 rowspan） ---
+        body_rows_html = []
+        nrows = len(_df)
+
+        for r in range(nrows):
+            tds = []
+
+            for col in columns:
+                val = _df.iloc[r][_df.columns.get_loc(col)]
+                txt = "" if pd.isna(val) else str(val)
+                esc = ihtml.escape(txt)
+
+                # 只對 category_col / total_col 處理 rowspan；其他照常輸出
+                if col == category_col:
+                    # 只有段落起點才輸出 <td rowspan="...">
+                    if r in cat_runs:
+                        rs = cat_runs[r]
+                        tds.append(f'<td rowspan="{rs}">{esc}</td>')
                     else:
-                        cur = cur.replace(month=cur.month+1, day=1)
-            # 填入J~V
-            col_letters = [chr(i) for i in range(ord('J'), ord('J')+len(date_labels))]
-            for i, (col, date_label) in enumerate(zip(col_letters, date_labels)):
-                headers[col] = date_label
-            # Update header row
-            for cell in ws[1]:
-                col_letter = cell.column_letter
-                if col_letter in headers:
-                    cell.value = headers[col_letter]
-        
-        # Set header font and alignment
-        header_font = Font(bold=True)
-        header_fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
-        center_alignment = Alignment(horizontal="center", vertical="center")
-        
-        # Format headers
-        for cell in ws[1]:
-            cell.font = header_font
-            cell.fill = header_fill
-            cell.alignment = center_alignment
-        
-        # Auto-adjust column widths
-        for column in ws.columns:
-            max_length = 0
-            column_letter = column[0].column_letter
-            
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            
-            adjusted_width = min(max_length + 2, 50)
-            ws.column_dimensions[column_letter].width = adjusted_width
+                        # 非起點列就跳過（由起點列的 rowspan 覆蓋）
+                        pass
+                elif col == total_col:
+                    if r in tot_runs:
+                        rs = tot_runs[r]
+                        tds.append(f'<td rowspan="{rs}">{esc}</td>')
+                    else:
+                        pass
+                else:
+                    tds.append(f"<td>{esc}</td>")
+
+            body_rows_html.append("<tr>" + "".join(tds) + "</tr>")
+
+        tbody_html = "<tbody>\n" + "\n".join(body_rows_html) + "\n</tbody>"
+
+        html = f"""<!DOCTYPE html>
+    <html lang="zh-Hant">
+    <head>
+    <meta charset="utf-8">
+    <title>報表</title>
+    {style_block}
+    </head>
+    <body>
+    <table id="{table_id}">
+    {thead_html}
+    {tbody_html}
+    </table>
+    </body>
+    </html>
+    """
+
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write(html)
+
+        return html
+
+
+    def export_to_excel(self, df: pd.DataFrame, filename: str = "output.xlsx"):
+        # 先輸出到 Excel
+        df.to_excel(filename, index=False)
+
+
+        # 讀取 Excel，進行合併
+        wb = openpyxl.load_workbook(filename)
+        ws = wb.active
+
+        # 找出欄位位置
+        category_col = df.columns.get_loc("category") + 1  # 轉為 Excel index (從 1 開始)
+        score_total_col = df.columns.get_loc("score_total") + 1
+
+        start_row = 2  # 第一列是標題，從第二列開始
+        for col in [category_col, score_total_col]:
+            prev_val = ws.cell(row=start_row, column=col).value
+            merge_start = start_row
+
+            for row in range(start_row + 1, ws.max_row + 1):
+                current_val = ws.cell(row=row, column=col).value
+                if current_val != prev_val:
+                    # 合併上一段
+                    if merge_start < row - 1:
+                        ws.merge_cells(
+                            start_row=merge_start,
+                            start_column=col,
+                            end_row=row - 1,
+                            end_column=col
+                        )
+                    merge_start = row
+                    prev_val = current_val
+
+            # 處理最後一段
+            if merge_start < ws.max_row:
+                ws.merge_cells(
+                    start_row=merge_start,
+                    start_column=col,
+                    end_row=ws.max_row,
+                    end_column=col
+                )
+
+        wb.save(filename)
+        print(f"已輸出並合併完成：{filename}")
+
+
     def adjust_df_frequency(self, df: pd.DataFrame, date_col: str = 'Date', frequency: str = 'M') -> pd.DataFrame:
         """Adjust DataFrame to specified frequency by resampling"""
         df[date_col] = pd.to_datetime(df[date_col])
         df = df.set_index(date_col).resample(frequency).last().reset_index()
         return df
         
-    def generate_report(self, output_file: str = "report_output.xlsx"):
+    def generate_report(self, display_period: tuple ,output_file: str = "report_output.html"):
         """
-        Generate the complete Excel report
+        Generate the complete  Html report
         
         Args:
-            output_file: Output Excel file path
+            output_file: Output html file path
         """
         print("Loading data...")
         value_df, score_df, measure_profile = self.load_data()
@@ -299,46 +359,20 @@ class CSVToReportGenerator:
         score_df = self.adjust_df_frequency(score_df, frequency=self.frequency)
 
         print("Creating report sheet...")
-        report_df = self.create_report_sheet(value_df, score_df, measure_profile)
-        
-        print("Creating summary sheet...")
-        summary_df = self.create_summary_sheet(report_df)
-        
-        print("Writing Excel file...")
-        # Create workbook
-        wb = Workbook()
-        
-        # Remove default sheet
-        wb.remove(wb.active)
-        
-        # Create Report sheet
-        ws_report = wb.create_sheet("Report")
-        for row in dataframe_to_rows(report_df, index=False, header=True):
-            ws_report.append(row)
-        self.format_excel_sheet(ws_report, report_df, "Report")
-        
-        # Create Summary sheet
-        ws_summary = wb.create_sheet("Summary")
-        for row in dataframe_to_rows(summary_df, index=False, header=True):
-            ws_summary.append(row)
-        self.format_excel_sheet(ws_summary, summary_df, "Summary")
-        
-        # Save workbook
-        wb.save(output_file)
-        print(f"Report saved to: {output_file}")
-        
-        # Print summary
-        print(f"\n=== Report Summary ===")
-        print(f"Total measures processed: {len(report_df)}")
-        print(f"Categories: {summary_df['面向'].tolist()}")
-        for _, row in summary_df.iterrows():
-            print(f"  {row['面向']}: {row['指標數量']} 指標, 總分 {row['分數總和']}")
+        # Create the report DataFrame
+        report_df = self.create_report_sheet(display_period, value_df, score_df, measure_profile)
 
+        print("exporting to HTML...")
+        self.export_to_html(report_df, output_file)
+
+        print("Exporting to Excel...")
+        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"))
 
 def main():
     """Main function to run the report generator"""
     
-    # Input files
+    # Input
+    display_period = ('2024/12/1','2025/7/31')
     value_file = "measure_value.csv"
     score_file = "measure_score.csv"
     measure_profile_file = "measure_profile.json"
@@ -367,7 +401,7 @@ def main():
     
     # Generate report
     generator = CSVToReportGenerator(value_file, score_file, measure_profile_file, categories)
-    generator.generate_report()
+    generator.generate_report(display_period)
 
 
 if __name__ == "__main__":
