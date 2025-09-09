@@ -28,7 +28,8 @@ import os
 class CSVToReportGenerator:
     """Generate Excel report from CSV and JSON files"""
     
-    def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict):
+    def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict,
+                 display_period: tuple = None, frequency: str = 'M'):
         """
         Initialize the generator with input files
         
@@ -37,17 +38,28 @@ class CSVToReportGenerator:
             score_file: Path to measure_score.csv  
             measure_profile_file: Path to measure_profile.json
             categories: Dictionary of measure categories
+            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings, default: 去年底~今日
+            frequency: Data frequency, e.g. '月', default: '月'
         """
         self.value_file = value_file
         self.score_file = score_file
         self.measure_profile_file = measure_profile_file
         self.categories = categories
+        # 預設顯示區間: 去年底~今日
+        import datetime
+        today = datetime.date.today()
+        last_year_end = datetime.date(today.year - 1, 12, 31)
+        if display_period is None:
+            self.display_period = (last_year_end.strftime('%Y/%m/%d'), today.strftime('%Y/%m/%d'))
+        else:
+            self.display_period = display_period
+        self.frequency = frequency
         
     def clean_column_name(self, col_name: str) -> str:
         """Clean column names by removing extra spaces and newlines"""
         return col_name.strip().replace('\n', '')
-    
-    def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
+
+    def load_data(self, frequency: str = "M") -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
         """
         Load and clean data from input files
         
@@ -57,7 +69,7 @@ class CSVToReportGenerator:
         # Load CSV files with big5 encoding
         value_df = pd.read_csv(self.value_file, encoding='big5')
         score_df = pd.read_csv(self.score_file, encoding='big5')
-        
+
         # Clean column names
         value_df.columns = [self.clean_column_name(col) for col in value_df.columns]
         score_df.columns = [self.clean_column_name(col) for col in score_df.columns]
@@ -203,22 +215,43 @@ class CSVToReportGenerator:
         
         # Add proper column headers for Report sheet
         if sheet_name == "Report":
-            # Set meaningful headers instead of just letters
+            # Set static headers
             headers = {
                 'A': '', 'B': '', 'C': '', 'D': '', 'E': '', 'F': '',
                 'G': '指標ID', 'H': '指標名稱', 'I': '面向分類',
-                'J': '2024/12/31', 'K': '2025/1/31', 'L': '2025/2/28', 
-                'M': '2025/3/31', 'N': '2025/4/30', 'O': '2025/5/31', 
-                'P': '2025/6/30', 'W': '最新數值', 'X': '分數'
+                'W': '最新數值', 'X': '分數'
             }
-            
+            # 動態產生J~V等日期欄位
+            import pandas as pd
+            from datetime import datetime
+            import calendar
+            start_str, end_str = self.display_period
+            freq = self.frequency
+            start = pd.to_datetime(start_str)
+            end = pd.to_datetime(end_str)
+            date_labels = []
+            if freq == '月':
+                # 產生每月最後一天
+                cur = start
+                while cur <= end:
+                    last_day = cur.replace(day=calendar.monthrange(cur.year, cur.month)[1])
+                    if last_day > end:
+                        last_day = end
+                    date_labels.append(last_day.strftime('%Y/%m/%d'))
+                    # 下個月
+                    if cur.month == 12:
+                        cur = cur.replace(year=cur.year+1, month=1, day=1)
+                    else:
+                        cur = cur.replace(month=cur.month+1, day=1)
+            # 填入J~V
+            col_letters = [chr(i) for i in range(ord('J'), ord('J')+len(date_labels))]
+            for i, (col, date_label) in enumerate(zip(col_letters, date_labels)):
+                headers[col] = date_label
             # Update header row
-            for col_letter, header_text in headers.items():
-                if header_text:  # Only update non-empty headers
-                    for cell in ws[1]:
-                        if cell.column_letter == col_letter:
-                            cell.value = header_text
-                            break
+            for cell in ws[1]:
+                col_letter = cell.column_letter
+                if col_letter in headers:
+                    cell.value = headers[col_letter]
         
         # Set header font and alignment
         header_font = Font(bold=True)
@@ -245,7 +278,12 @@ class CSVToReportGenerator:
             
             adjusted_width = min(max_length + 2, 50)
             ws.column_dimensions[column_letter].width = adjusted_width
-    
+    def adjust_df_frequency(self, df: pd.DataFrame, date_col: str = 'Date', frequency: str = 'M') -> pd.DataFrame:
+        """Adjust DataFrame to specified frequency by resampling"""
+        df[date_col] = pd.to_datetime(df[date_col])
+        df = df.set_index(date_col).resample(frequency).last().reset_index()
+        return df
+        
     def generate_report(self, output_file: str = "report_output.xlsx"):
         """
         Generate the complete Excel report
@@ -255,7 +293,11 @@ class CSVToReportGenerator:
         """
         print("Loading data...")
         value_df, score_df, measure_profile = self.load_data()
-        
+
+        #調整資料
+        value_df = self.adjust_df_frequency(value_df, frequency=self.frequency)
+        score_df = self.adjust_df_frequency(score_df, frequency=self.frequency)
+
         print("Creating report sheet...")
         report_df = self.create_report_sheet(value_df, score_df, measure_profile)
         
