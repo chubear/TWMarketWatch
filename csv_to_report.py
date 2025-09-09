@@ -400,12 +400,19 @@ class CSVToReportGenerator:
 
         print("exporting to HTML...")
         # 使用預設的合併欄位以維持向後相容性
+        rename_dict = {
+            'category': '類別',
+            'measure_name': '指標名稱',
+            'unit': '單位',
+            'score': '分數',
+            'score_total': '類別總分'
+        }
         default_col_mergecell = ['category', 'score_total']
-        self.export_to_html(report_df, output_file, col_mergecell=default_col_mergecell)
+        self.export_to_html(report_df, output_file, rename=rename_dict, col_mergecell=default_col_mergecell)
 
         print("Exporting to Excel...")
         # 使用預設的合併欄位以維持向後相容性
-        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), col_mergecell=default_col_mergecell)
+        self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), rename=rename_dict, col_mergecell=default_col_mergecell)
 
 def main():
     """Main function to run the report generator"""
