@@ -12,12 +12,11 @@ Requirements:
 - measure_profile.json: Measure metadata (name, unit)
 
 Output:
-- report_output.xlsx: Excel file with Report and Summary sheets
+- report_output.csv: CSV file with Report and Summary sheets
 """
 
 import pandas as pd
 import json
-import openpyxl
 from openpyxl.utils.dataframe import dataframe_to_rows
 from typing import Dict, List, Tuple
 import os
@@ -26,7 +25,6 @@ import html as ihtml
 from typing import Dict, List, Optional
 
 class CSVToReportGenerator:
-    """Generate Excel report from CSV and JSON files"""
     
     def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict,
                   frequency: str = 'ME'):
@@ -154,232 +152,13 @@ class CSVToReportGenerator:
         return report_df
 
 
-    def export_to_html(self, df: pd.DataFrame, filename: str = "report.html", 
-                       add_style: bool = True, 
-                       rename: Optional[Dict[str, str]] = None,
-                       col_mergecell: Optional[List[str]] = None) -> str:
-        """
-        將 DataFrame 輸出為 HTML 表格，並針對指定欄位進行儲存格列合併(rowspan)。
-
-        參數：
-            df            : 來源 DataFrame（會依目前順序判斷相鄰合併）
-            filename      : 輸出 HTML 檔名
-            add_style     : 是否插入內嵌 CSS 樣式
-            rename        : 欄位重命名字典, e.g. {'category': '類別', 'measure_name': '指標名稱'}
-            col_mergecell : 要進行合併的欄位清單, e.g. ['category', 'score_total']
-
-        回傳：
-            產出的 HTML 字串（亦會寫入 filename）
-        """
-        # 製作副本並應用重命名
-        _df = df.copy()
-        if rename:
-            _df = _df.rename(columns=rename)
-        
-        # 設定參數
-        table_id = "report-table"
-        merge_cols = col_mergecell if col_mergecell else []
-
-        
-        # 為了相等性判斷一致，先把 NaN 轉為空字串
-        for col in _df.columns:
-            _df[col] = _df[col].fillna("")
-
-        # --- 計算連續區段的 rowspan 起點與長度 ---
-        def compute_runs(series: pd.Series) -> Dict[int, int]:
-            """回傳 {起始列索引: 連續長度} 只記錄每段起始列"""
-            runs = {}
-            i, n = 0, len(series)
-            while i < n:
-                j = i + 1
-                while j < n and series.iloc[j] == series.iloc[i]:
-                    j += 1
-                runs[i] = j - i
-                i = j
-            return runs
-
-        # 計算每個要合併的欄位的連續區段
-        merge_runs = {}
-        for col_name in merge_cols:
-            # 檢查原始欄名是否存在於原始 DataFrame
-            if col_name in df.columns:
-                # 取得重命名後的欄名
-                renamed_col = rename.get(col_name, col_name) if rename else col_name
-                if renamed_col in _df.columns:
-                    merge_runs[renamed_col] = compute_runs(_df[renamed_col])
-
-        # --- 準備輸出欄順序：維持重命名後的 df 欄位順序 ---
-        columns: List[str] = list(_df.columns)
-
-        # --- 內嵌樣式（可關閉或自行覆寫） ---
-        style_block = ""
-        if add_style:
-            style_block = f"""
-    <style>
-    table#{table_id} {{
-        border-collapse: collapse;
-        width: 100%;
-        table-layout: fixed;
-        word-wrap: break-word;
-    }}
-    table#{table_id} th, table#{table_id} td {{
-        border: 1px solid #ddd;
-        padding: 6px 8px;
-        vertical-align: middle;
-        text-align: center;
-    }}
-    table#{table_id} thead th {{
-        background: #f4f6f8;
-        font-weight: 600;
-    }}
-    table#{table_id} tbody tr:nth-child(even) {{
-        background: #fafafa;
-    }}
-    /* sticky header（如不需要可刪除） */
-    table#{table_id} thead th {{
-        position: sticky;
-        top: 0;
-        z-index: 2;
-    }}
-    </style>
-    """
-
-        # --- 建立表頭 ---
-        thead_cells = "".join(f"<th>{ihtml.escape(str(col))}</th>" for col in columns)
-        thead_html = f"<thead><tr>{thead_cells}</tr></thead>"
-
-        # --- 建立表身（處理 rowspan） ---
-        body_rows_html = []
-        nrows = len(_df)
-
-        for r in range(nrows):
-            tds = []
-
-            for col in columns:
-                col_index = _df.columns.get_loc(col)
-                val = _df.iloc[r, col_index]
-                txt = "" if pd.isna(val) else str(val)
-                esc = ihtml.escape(txt)
-
-                # 檢查是否為需要合併的欄位
-                if col in merge_runs:
-                    # 只有段落起點才輸出 <td rowspan="...">
-                    if r in merge_runs[col]:
-                        rs = merge_runs[col][r]
-                        tds.append(f'<td rowspan="{rs}">{esc}</td>')
-                    else:
-                        # 非起點列就跳過（由起點列的 rowspan 覆蓋）
-                        pass
-                else:
-                    tds.append(f"<td>{esc}</td>")
-
-            body_rows_html.append("<tr>" + "".join(tds) + "</tr>")
-
-        tbody_html = "<tbody>\n" + "\n".join(body_rows_html) + "\n</tbody>"
-
-        html = f"""<!DOCTYPE html>
-    <html lang="zh-Hant">
-    <head>
-    <meta charset="utf-8">
-    <title>報表</title>
-    {style_block}
-    </head>
-    <body>
-    <table id="{table_id}">
-    {thead_html}
-    {tbody_html}
-    </table>
-    </body>
-    </html>
-    """
-
-        with open(filename, "w", encoding="utf-8") as f:
-            f.write(html)
-
-        return html
-
-
-    def export_to_excel(self, df: pd.DataFrame, filename: str = "output.xlsx", 
-                        rename: Optional[Dict[str, str]] = None, 
-                        col_mergecell: Optional[List[str]] = None):
-        """
-        Export DataFrame to Excel with optional header renaming and configurable cell merging
-        
-        Args:
-            df: DataFrame to export
-            filename: Output Excel filename
-            rename: Dictionary to rename column headers, e.g. {'category': '類別', 'measure_name': '指標名稱'}
-            col_mergecell: List of column names to apply cell merging, e.g. ['category', 'score_total']
-        """
-        # 製作副本以避免修改原 DataFrame
-        output_df = df.copy()
-        
-        # 應用列名重命名
-        if rename:
-            output_df = output_df.rename(columns=rename)
-        
-        # 先輸出到 Excel
-        output_df.to_excel(filename, index=False)
-
-        # 如果沒有指定合併欄位，則不進行合併
-        if not col_mergecell:
-            print(f"已輸出完成：{filename}")
-            return
-
-        # 讀取 Excel，進行合併
-        wb = openpyxl.load_workbook(filename)
-        ws = wb.active
-
-        # 找出要合併的欄位位置
-        merge_columns = []
-        for col_name in col_mergecell:
-            # 檢查原始欄名是否存在
-            if col_name in df.columns:
-                # 取得重命名後的欄名
-                renamed_col = rename.get(col_name, col_name) if rename else col_name
-                if renamed_col in output_df.columns:
-                    col_index = output_df.columns.get_loc(renamed_col) + 1  # 轉為 Excel index (從 1 開始)
-                    merge_columns.append(col_index)
-
-        start_row = 2  # 第一列是標題，從第二列開始
-        for col in merge_columns:
-            prev_val = ws.cell(row=start_row, column=col).value
-            merge_start = start_row
-
-            for row in range(start_row + 1, ws.max_row + 1):
-                current_val = ws.cell(row=row, column=col).value
-                if current_val != prev_val:
-                    # 合併上一段
-                    if merge_start < row - 1:
-                        ws.merge_cells(
-                            start_row=merge_start,
-                            start_column=col,
-                            end_row=row - 1,
-                            end_column=col
-                        )
-                    merge_start = row
-                    prev_val = current_val
-
-            # 處理最後一段
-            if merge_start < ws.max_row:
-                ws.merge_cells(
-                    start_row=merge_start,
-                    start_column=col,
-                    end_row=ws.max_row,
-                    end_column=col
-                )
-
-        wb.save(filename)
-        print(f"已輸出並合併完成：{filename}")
-
-
     def adjust_df_frequency(self, df: pd.DataFrame, date_col: str = 'Date', frequency: str = 'M') -> pd.DataFrame:
         """Adjust DataFrame to specified frequency by resampling"""
         df[date_col] = pd.to_datetime(df[date_col])
         df = df.set_index(date_col).resample(frequency).last().reset_index()
         return df
         
-    def generate_report(self, display_period: tuple, output_file: str = "report_output.html"):
+    def generate_report(self, display_period: tuple, output_file: str = "report_output.csv"):
         """
         Generate the complete Html report
         
@@ -398,8 +177,6 @@ class CSVToReportGenerator:
         # Create the report DataFrame
         report_df = self.create_report_sheet(display_period, value_df, score_df, measure_profile)
 
-        print("exporting to HTML...")
-        # 使用預設的合併欄位以維持向後相容性
         rename_dict = {
             'category': '類別',
             'measure_name': '指標名稱',
@@ -407,12 +184,8 @@ class CSVToReportGenerator:
             'score': '分數',
             'score_total': '類別總分'
         }
-        default_col_mergecell = ['category', 'score_total']
-        self.export_to_html(report_df, output_file, rename=rename_dict, col_mergecell=default_col_mergecell)
-
-        # print("Exporting to Excel...")
-        # # 使用預設的合併欄位以維持向後相容性
-        # self.export_to_excel(report_df, output_file.replace(".html", ".xlsx"), rename=rename_dict, col_mergecell=default_col_mergecell)
+        report_df = report_df.rename(columns=rename_dict)
+        report_df.to_csv(output_file, index=False, encoding='utf-8-sig')
 
 def main():
     """Main function to run the report generator"""
@@ -447,7 +220,7 @@ def main():
     
     # Generate report
     generator = CSVToReportGenerator(value_file, score_file, measure_profile_file, categories)
-    generator.generate_report(display_period, output_file="docs/index.html")
+    generator.generate_report(display_period, output_file="docs/test_report.csv")
 
 
 if __name__ == "__main__":
