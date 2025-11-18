@@ -7,6 +7,8 @@ from typing import Dict, Any, Union, Callable
 from datetime import date
 
 import pandas as pd
+import requests
+from datetime import datetime
 
 DateLike = Union[str, date, pd.Timestamp]
 
@@ -16,11 +18,12 @@ class MeasureValue:
     負責依照 measure_profile.json 中的設定，
     呼叫本 class 內對應的 measure method，產生 measure_value 的 DataFrame 或 CSV。
     """
-
+    URL = "http://localhost:8000/api/indistock"
     def __init__(self, profile_path: Union[str, Path], encoding: str = "utf-8-sig"):
         self.profile_path = Path(profile_path)
         self.encoding = encoding
         self.measure_profile: Dict[str, Dict[str, Any]] = self._load_measure_profile()
+        
 
         # 你也可以在這裡建立 DB 連線、session 等共用資源
         # self.engine = create_engine(...)
@@ -170,63 +173,353 @@ class MeasureValue:
         # TODO: 實作取數邏輯
         raise NotImplementedError("請在 fetch_ism_manufacturing_index 中實作實際取數邏輯")
 
-    # --- 範例 3：加權指數乖離率 ---
+    # --- 67天加權指數乖離率 ---
     def fetch_taiex_bias(
         self,
         start_date: DateLike,
         end_date: DateLike,
-        ma_window: int = 20,
-        **kwargs: Any,
     ) -> pd.Series:
         """
         加權指數乖離率_id
         - 乖離率 = (收盤 / MA(n) - 1) * 100
-        - 這個 method 只負責加權指數，不處理其他指數
         """
-        # TODO: 改成你真正的價量資料來源
-        # df = self._query_index_price("TAIEX", start_date, end_date)
-        # close = df["close"]
-        # ma = close.rolling(ma_window).mean()
-        # bias = (close / ma - 1.0) * 100.0
-        # bias.index = pd.to_datetime(df["date"])
-        # bias = bias.resample("M").last()   # 若要月頻
-        # return bias
 
-        raise NotImplementedError("請在 fetch_taiex_bias 中實作實際取數邏輯")
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
 
-    # --- 範例 4：OTC 乖離率 ---
+       
+        params = {
+            'stock_id': 'TWA00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '價格_BIAS_67D',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
+            print(df.head())
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['價格_BIAS_67D']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_taiex_bias 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+
+
+
+    # --- OTC 乖離率 ---
     def fetch_otc_bias(
         self,
         start_date: DateLike,
         end_date: DateLike,
-        ma_window: int = 20,
-        **kwargs: Any,
     ) -> pd.Series:
         """
         OTC 指數乖離率_id
         """
-        # TODO: 實作 OTC 版乖離率
-        raise NotImplementedError("請在 fetch_otc_bias 中實作實際取數邏輯")
 
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWC00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '價格_BIAS_67D',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
+            print(df.head())
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['價格_BIAS_67D']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_otc_bias 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+    def fetch_taiex_macd(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        加權指數MACD_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWA00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '價格_MACD_12D_26D_9D',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
+            
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                #MACD會傳回三欄:pandas_ta的定義為:macd,signalma,histogram。但對照中文的定義是:dif,macd,dif-macd
+                series = df['價格_MACD_12D_26D_9D_2']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_taiex_macd 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+    def fetch_otc_macd(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        加權指數MACD_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWC00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '價格_MACD_12D_26D_9D',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
+            
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                #MACD會傳回三欄:pandas_ta的定義為:macd,signalma,histogram。但對照中文的定義是:dif,macd,dif-macd
+                series = df['價格_MACD_12D_26D_9D_2']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_otc_macd 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+    def fetch_taiex_dif(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        加權指數DIF_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWA00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '價格_MACD_12D_26D_9D',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
+            
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                #MACD會傳回三欄:pandas_ta的定義為:macd,signalma,histogram。但對照中文的定義是:dif,macd,dif-macd
+                series = df['價格_MACD_12D_26D_9D_1']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_taiex_dif 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+ 
     # --- 範例 5：加權指數本益比 ---
     def fetch_taiex_pe(
         self,
         start_date: DateLike,
         end_date: DateLike,
-        **kwargs: Any,
     ) -> pd.Series:
         """
         加權指數本益比_id
         """
-        # TODO: 實作估值資料取數
-        # df = self._query_index_valuation("TAIEX", start_date, end_date)
-        # s = df["pe"]
-        # s.index = pd.to_datetime(df["date"])
-        # s = s.resample("M").last()
-        # return s
 
-        raise NotImplementedError("請在 fetch_taiex_pe 中實作實際取數邏輯")
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
 
+       
+        params = {
+            'stock_id': 'TWA00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '本益比4',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
+            print(df.head())
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['本益比4']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_taiex_pe 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+    def fetch_otc_pe(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        OTC 指數本益比_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWC00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '本益比4',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
+            print(df.head())
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['本益比4']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_otc_pe 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
     # 你可以繼續往下增加：
     # - fetch_taiwan_export_orders
     # - fetch_taiwan_industrial_production
@@ -241,17 +534,17 @@ class MeasureValue:
 #   使用範例
 # =========================
 if __name__ == "__main__":
-    mv = MeasureValue("measure_profile.json")
+    mv = MeasureValue("data/measure_profile.json")
 
     # 1) 計算單一 measure
-    # s = mv.compute_one("台灣領先指標_id", "2015-01-01", "2025-12-31")
-    # print(s.head())
+    s = mv.compute_one("加權指數乖離率_id", "2025-07-01", "2025-12-31")
+    print(s.head())
 
     # 2) 計算全部 measure 並輸出成 measure_value.csv
-    mv.to_csv(
-        start_date="2015-01-01",
-        end_date="2025-12-31",
-        output_path="measure_value.csv",
-        how="outer",        # 日期外連接
-        csv_encoding="cp950"
-    )
+    # mv.to_csv(
+    #     start_date="2015-01-01",
+    #     end_date="2025-12-31",
+    #     output_path="measure_value.csv",
+    #     how="outer",        # 日期外連接
+    #     csv_encoding="cp950"
+    # )
