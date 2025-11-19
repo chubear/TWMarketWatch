@@ -90,6 +90,7 @@ class MeasureValue:
         start_date: DateLike,
         end_date: DateLike,
         how: str = "outer",            # 'outer' 或 'inner'：日期對齊方式
+        frequency: str = "D" # 重新取樣頻率，例如 'D'、'W'、'M'
     ) -> pd.DataFrame:
         """
         計算 profile 中所有 measure，組成一個 DataFrame。
@@ -103,6 +104,10 @@ class MeasureValue:
 
         # 整併成 DataFrame
         df = pd.concat(series_dict.values(), axis=1, join=how)
+        # 依 frequency 重取樣
+        df = df.groupby(df.index.to_period(frequency)).tail(1)
+
+        
         return df
 
     def to_csv(
@@ -111,13 +116,14 @@ class MeasureValue:
         end_date: DateLike,
         output_path: Union[str, Path] = "measure_value.csv",
         how: str = "outer",
-        csv_encoding: str = "cp950",
+        frequency: str = "D",# 重新取樣頻率，例如 'D'、'W'、'M'
+        csv_encoding: str = "utf-8-sig",
         date_format: str = "%Y/%m/%d",
     ) -> pd.DataFrame:
         """
         直接計算全部 measure 並輸出 CSV，回傳 DataFrame。
         """
-        df = self.compute_all(start_date, end_date, how=how)
+        df = self.compute_all(start_date, end_date, how=how, frequency=frequency)
 
         # 把 index 變成 Date 欄位
         df_out = df.copy()
@@ -575,14 +581,13 @@ if __name__ == "__main__":
     # s = mv.compute_one("加權指數乖離率_id", "2025-07-01", "2025-12-31")
     # print(s.head())
     # 2) 計算全部 measure
-    all = mv.compute_all("2024-07-01", "2025-12-31")
-    print(all.iloc[-1])  
+    # all = mv.compute_all("2024-07-01", "2025-12-31", frequency="Q")
+    # print(all)  
 
     # 3) 計算全部 measure 並輸出成 measure_value.csv
-    # mv.to_csv(
-    #     start_date="2015-01-01",
-    #     end_date="2025-12-31",
-    #     output_path="measure_value.csv",
-    #     how="outer",        # 日期外連接
-    #     csv_encoding="cp950"
-    # )
+    mv.to_csv(
+        start_date="2024-01-01",
+        end_date="2025-12-31",
+        output_path="measure_value.csv",
+        frequency="M",
+    )
