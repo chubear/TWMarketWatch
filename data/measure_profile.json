@@ -2,46 +2,55 @@
   "加權指數乖離率_id": {
     "name": "加權指數乖離率",
     "unit": "%",
-    "func": "fetch_taiex_bias"
+    "func_value": "fetch_taiex_bias",
+    "func_score": "calc_score_taiex_bias"
   },
   "OTC指數乖離率_id": {
     "name": "OTC指數乖離率",
     "unit": "%",
-    "func": "fetch_otc_bias"
+    "func_value": "fetch_otc_bias",
+    "func_score": "calc_score_otc_bias"
   },
   "加權指數MACD_id": {
     "name": "加權指數MACD",
     "unit": "值",
-    "func": "fetch_taiex_macd"
+    "func_value": "fetch_taiex_macd",
+    "func_score": "calc_score_taiex_macd"
   },
   "OTC指數MACD_id": {
     "name": "OTC指數MACD",
     "unit": "值",
-    "func": "fetch_otc_macd"
+    "func_value": "fetch_otc_macd",
+    "func_score": "calc_score_otc_macd"
   },
   "加權指數DIF_id": {
     "name": "加權指數DIF",
     "unit": "值",
-    "func": "fetch_taiex_dif"
+    "func_value": "fetch_taiex_dif",
+    "func_score": "calc_score_taiex_dif"
   },
   "加權指數本益比_id": {
     "name": "加權指數本益比",
     "unit": "倍",
-    "func": "fetch_taiex_pe"
+    "func_value": "fetch_taiex_pe",
+    "func_score": "calc_score_taiex_pe"
   },
   "OTC指數本益比_id": {
     "name": "OTC指數本益比",
     "unit": "倍",
-    "func": "fetch_otc_pe"
+    "func_value": "fetch_otc_pe",
+    "func_score": "calc_score_otc_pe"
   },
   "加權指數股價淨值比_id": {
     "name": "加權指數股價淨值比",
     "unit": "倍",
-    "func": "fetch_taiex_pb"
+    "func_value": "fetch_taiex_pb",
+    "func_score": "calc_score_taiex_pb"
   },
   "OTC指數股價淨值比_id": {
     "name": "OTC指數股價淨值比",
     "unit": "倍",
-    "func": "fetch_otc_pb"
+    "func_value": "fetch_otc_pb",
+    "func_score": "calc_score_otc_pb"
   }
 }
