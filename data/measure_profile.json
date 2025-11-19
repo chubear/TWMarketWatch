@@ -1,49 +1,4 @@
 {
-  "台灣領先指標_id": {
-    "name": "台灣領先指標",
-    "unit": "值",
-    "func": "fetch_taiwan_leading_indicator"
-  },
-  "ISM製造業指數_id": {
-    "name": "ISM製造業指數",
-    "unit": "值",
-    "func": "fetch_ism_manufacturing_index"
-  },
-  "台灣外銷訂單_id": {
-    "name": "台灣外銷訂單",
-    "unit": "百萬美元",
-    "func": "fetch_taiwan_export_orders"
-  },
-  "台灣工業生產指數_id": {
-    "name": "台灣工業生產指數",
-    "unit": "值",
-    "func": "fetch_taiwan_industrial_production"
-  },
-  "台灣貿易收支_id": {
-    "name": "台灣貿易收支",
-    "unit": "十億美元",
-    "func": "fetch_taiwan_trade_balance"
-  },
-  "台灣零售銷售_id": {
-    "name": "台灣零售銷售",
-    "unit": "十億台幣",
-    "func": "fetch_taiwan_retail_sales"
-  },
-  "台灣失業率_id": {
-    "name": "台灣失業率",
-    "unit": "%",
-    "func": "fetch_taiwan_unemployment_rate"
-  },
-  "台灣CPI_id": {
-    "name": "台灣CPI",
-    "unit": "值",
-    "func": "fetch_taiwan_cpi"
-  },
-  "台灣M1B-M2_id": {
-    "name": "台灣M1B-M2",
-    "unit": "值",
-    "func": "fetch_taiwan_m1b_m2"
-  },
   "加權指數乖離率_id": {
     "name": "加權指數乖離率",
     "unit": "%",
@@ -69,30 +24,10 @@
     "unit": "值",
     "func": "fetch_taiex_dif"
   },
-  "加權指數ADX_id": {
-    "name": "加權指數ADX",
-    "unit": "值",
-    "func": "fetch_taiex_adx"
-  },
   "加權指數本益比_id": {
     "name": "加權指數本益比",
     "unit": "倍",
     "func": "fetch_taiex_pe"
-  },
-  "台灣50指數本益比_id": {
-    "name": "台灣50指數本益比",
-    "unit": "倍",
-    "func": "fetch_tw50_pe"
-  },
-  "台灣中型100指數本益比_id": {
-    "name": "台灣中型100指數本益比",
-    "unit": "倍",
-    "func": "fetch_mid100_pe"
-  },
-  "台灣高股息指數本益比_id": {
-    "name": "台灣高股息指數本益比",
-    "unit": "倍",
-    "func": "fetch_highdiv_pe"
   },
   "OTC指數本益比_id": {
     "name": "OTC指數本益比",
@@ -103,21 +38,6 @@
     "name": "加權指數股價淨值比",
     "unit": "倍",
     "func": "fetch_taiex_pb"
-  },
-  "台灣50指數股價淨值比_id": {
-    "name": "台灣50指數股價淨值比",
-    "unit": "倍",
-    "func": "fetch_tw50_pb"
-  },
-  "台灣中型100指數股價淨值比_id": {
-    "name": "台灣中型100指數股價淨值比",
-    "unit": "倍",
-    "func": "fetch_mid100_pb"
-  },
-  "台灣高股息指數股價淨值比_id": {
-    "name": "台灣高股息指數股價淨值比",
-    "unit": "倍",
-    "func": "fetch_highdiv_pb"
   },
   "OTC指數股價淨值比_id": {
     "name": "OTC指數股價淨值比",

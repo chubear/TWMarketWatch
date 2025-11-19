@@ -18,7 +18,7 @@ class MeasureValue:
     負責依照 measure_profile.json 中的設定，
     呼叫本 class 內對應的 measure method，產生 measure_value 的 DataFrame 或 CSV。
     """
-    URL = "http://localhost:8000/api/indistock"
+    URL = "https://api1.dottdot.com/api/indistock"
     def __init__(self, profile_path: Union[str, Path], encoding: str = "utf-8-sig"):
         self.profile_path = Path(profile_path)
         self.encoding = encoding
@@ -133,60 +133,20 @@ class MeasureValue:
         print(f"已輸出 {output_path}")
         return df_out
 
-    # =========================
+    # ==============================================
     #   以下是「每個 measure 各自獨立的 method」
-    #   你可以完全獨立實作，不需要互相呼叫
-    # =========================
-
-    # --- 範例 1：台灣領先指標 ---
-    def fetch_taiwan_leading_indicator(
-        self,
-        start_date: DateLike,
-        end_date: DateLike,
-        **kwargs: Any,
-    ) -> pd.Series:
-        """
-        台灣領先指標_id
-        - 完全獨立：不需要依賴其他 measure 的計算結果
-        - 你可以在這裡直接用 DB / API 取數，或讀現有 CSV
-        """
-        # TODO: 改成你實際取數邏輯
-        # 例如：
-        # df = self._query_macro_from_db(series_id="TW_LEADING", start_date=start_date, end_date=end_date)
-        # s = df["value"]
-        # s.index = pd.to_datetime(df["date"])
-        # s = s.resample("M").last()   # 若你要月資料
-        # return s
-
-        raise NotImplementedError("請在 fetch_taiwan_leading_indicator 中實作實際取數邏輯")
-
-    # --- 範例 2：ISM 製造業指數 ---
-    def fetch_ism_manufacturing_index(
-        self,
-        start_date: DateLike,
-        end_date: DateLike,
-        **kwargs: Any,
-    ) -> pd.Series:
-        """
-        ISM 製造業指數
-        """
-        # TODO: 實作取數邏輯
-        raise NotImplementedError("請在 fetch_ism_manufacturing_index 中實作實際取數邏輯")
-
-    # --- 67天加權指數乖離率 ---
+    # ==============================================
+    
     def fetch_taiex_bias(
         self,
         start_date: DateLike,
         end_date: DateLike,
     ) -> pd.Series:
         """
-        加權指數乖離率_id
-        - 乖離率 = (收盤 / MA(n) - 1) * 100
+        加權指數乖離率_id : 67日乖離率
         """
-
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
         end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-
        
         params = {
             'stock_id': 'TWA00',
@@ -201,12 +161,11 @@ class MeasureValue:
             response = requests.get(self.URL, params=params)
             response.raise_for_status()
             result = response.json()
-
+            
             if result.get("status") != "success":
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
             df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
-            print(df.head())
            
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
@@ -223,17 +182,13 @@ class MeasureValue:
         except Exception as e:
             print(f"資料處理失敗: {e}")
             raise
-
-
-
-    # --- OTC 乖離率 ---
     def fetch_otc_bias(
         self,
         start_date: DateLike,
         end_date: DateLike,
     ) -> pd.Series:
         """
-        OTC 指數乖離率_id
+        OTC 指數乖離率_id : 67日乖離率
         """
 
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
@@ -258,7 +213,6 @@ class MeasureValue:
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
             df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
-            print(df.head())
            
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
@@ -281,7 +235,7 @@ class MeasureValue:
         end_date: DateLike,
     ) -> pd.Series:
         """
-        加權指數MACD_id
+        加權指數MACD_id : MACD線
         """
 
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
@@ -305,8 +259,7 @@ class MeasureValue:
             if result.get("status") != "success":
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
-            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
-            
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])            
            
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
@@ -404,8 +357,7 @@ class MeasureValue:
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
             df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
-            
-           
+                       
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
                 df = df.set_index('日期')
@@ -423,7 +375,6 @@ class MeasureValue:
             print(f"資料處理失敗: {e}")
             raise
  
-    # --- 範例 5：加權指數本益比 ---
     def fetch_taiex_pe(
         self,
         start_date: DateLike,
@@ -455,7 +406,6 @@ class MeasureValue:
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
             df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
-            print(df.head())
            
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
@@ -503,7 +453,6 @@ class MeasureValue:
                 raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
             # 將資料轉換為 DataFrame
             df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
-            print(df.head())
            
             if not df.empty:
                 df['日期'] = pd.to_datetime(df['日期'])
@@ -520,14 +469,100 @@ class MeasureValue:
         except Exception as e:
             print(f"資料處理失敗: {e}")
             raise
-    # 你可以繼續往下增加：
-    # - fetch_taiwan_export_orders
-    # - fetch_taiwan_industrial_production
-    # - fetch_taiwan_cpi
-    # - fetch_tw50_pe
-    # - fetch_taiex_pb
-    # - ...
-    # 原則都是：每個 method 自己把資料取好、算好，回傳一個 pd.Series 即可。
+    def fetch_taiex_pb(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        加權指數股價淨值比_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWA00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '股價淨值比',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWA00"]["data"])
+            
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['股價淨值比']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_taiex_pb 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
+    def fetch_otc_pb(
+        self,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.Series:
+        """
+        OTC 指數股價淨值比_id
+        """
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+       
+        params = {
+            'stock_id': 'TWC00',
+            'start': start_str,
+            'end': end_str,
+            'fields': '股價淨值比',
+            'format': 'json',
+            'api_key': 'guest'
+        }
+
+        try:
+            response = requests.get(self.URL, params=params)
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("status") != "success":
+                raise ValueError(f"API 回傳錯誤狀態: {result.get('status')}")
+            # 將資料轉換為 DataFrame
+            df = pd.DataFrame.from_records(result["data"]["TWC00"]["data"])
+           
+            if not df.empty:
+                df['日期'] = pd.to_datetime(df['日期'])
+                df = df.set_index('日期')
+                series = df['股價淨值比']
+                series = series.dropna()  # 移除 NaN 值
+                return series
+            else:
+                raise ValueError("fetch_otc_pb 回傳的資料為空")
+                
+        except requests.RequestException as e:
+            print(f"API 請求失敗: {e}")
+            raise
+        except Exception as e:
+            print(f"資料處理失敗: {e}")
+            raise
 
 
 # =========================
@@ -537,10 +572,13 @@ if __name__ == "__main__":
     mv = MeasureValue("data/measure_profile.json")
 
     # 1) 計算單一 measure
-    s = mv.compute_one("加權指數乖離率_id", "2025-07-01", "2025-12-31")
-    print(s.head())
+    # s = mv.compute_one("加權指數乖離率_id", "2025-07-01", "2025-12-31")
+    # print(s.head())
+    # 2) 計算全部 measure
+    all = mv.compute_all("2024-07-01", "2025-12-31")
+    print(all.iloc[-1])  
 
-    # 2) 計算全部 measure 並輸出成 measure_value.csv
+    # 3) 計算全部 measure 並輸出成 measure_value.csv
     # mv.to_csv(
     #     start_date="2015-01-01",
     #     end_date="2025-12-31",
