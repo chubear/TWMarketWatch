@@ -1,12 +1,14 @@
 from __future__ import annotations
-
+import sys, os
 import json
 import requests
 import pandas as pd
 from pathlib import Path
 from typing import Dict, Any, Union, Callable, Optional
 from datetime import date, datetime
-from .config import Config
+#新增路徑
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from config import Config
 
 DateLike = Union[str, date, pd.Timestamp]
 
@@ -42,47 +44,7 @@ class BaseMeasure:
 
         return getattr(self, func_name)
 
-    def fetch_data(self, stock_id: str, start_date: DateLike, end_date: DateLike, fields: str) -> pd.DataFrame:
-        """
-        Common method to fetch data from the API.
-        """
-        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
-        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
 
-        params = {
-            'stock_id': stock_id,
-            'start': start_str,
-            'end': end_str,
-            'fields': fields,
-            'format': 'json',
-            'api_key': Config.API_KEY
-        }
-
-        try:
-            response = requests.get(Config.API_URL, params=params)
-            response.raise_for_status()
-            result = response.json()
-
-            if result.get("status") != "success":
-                raise ValueError(f"API returned error status: {result.get('status')}")
-            
-            data = result.get("data", {}).get(stock_id, {}).get("data", [])
-            df = pd.DataFrame.from_records(data)
-            
-            if not df.empty:
-                df['日期'] = pd.to_datetime(df['日期'])
-                df = df.set_index('日期')
-                return df
-            else:
-                # Return empty DataFrame with correct index name if possible, or just empty
-                return pd.DataFrame()
-                
-        except requests.RequestException as e:
-            print(f"API request failed: {e}")
-            raise
-        except Exception as e:
-            print(f"Data processing failed: {e}")
-            raise
 
     def compute_one(
         self,

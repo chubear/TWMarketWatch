@@ -29,6 +29,11 @@
     "func_value": "fetch_taiex_dif",
     "func_score": "calc_score_taiex_dif"
   },
+  "加權指數ADX_id": {
+    "name": "加權指數ADX",
+    "unit": "值",
+    "func": "fetch_taiex_adx"
+  },
   "加權指數本益比_id": {
     "name": "加權指數本益比",
     "unit": "倍",

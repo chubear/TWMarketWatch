@@ -55,15 +55,41 @@ class MeasureScore(MeasureValue):
     def calc_score_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 67日乖離率"""
         s = self.fetch_taiex_bias(start_date, end_date)
-        # Score 1 if > 0, else 0
-        return s.apply(lambda x: 1 if x > 0 else 0)
+        # Score 4 if > 2.72,3 elif >-2.68  else 0
+        return s.apply(lambda x: 4 if x > 2.72 else (3 if x > -2.68 else 0))
 
     def calc_score_otc_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數乖離率_id : 67日乖離率"""
-        # Original implementation returned the value directly, not a score.
-        # Preserving this behavior.
-        return self.fetch_otc_bias(start_date, end_date)
+        # Score 4 if > 3.0,3 elif >-3.94  else 0
+        s = self.fetch_otc_bias(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 3.0 else (3 if x > -3.94 else 0))
 
+    def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """加權指數MACD_id : MACD"""
+        s = self.fetch_taiex_macd(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
+    
+    def calc_score_otc_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """OTC MACD_id : MACD"""
+        s = self.fetch_otc_macd(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 3.57 else (3 if x > -5.68 else 0))    
+    
+    def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """加權指數DIF_id : DIF"""
+        s = self.fetch_taiex_dif(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
+    
+    def calc_score_taiex_adx(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """加權指數ADX_id : ADX"""
+        s = self.fetch_taiex_adx(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 19.61 else (3 if x > 12.2 else 0))
+
+    def calc_score_taiex_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """加權指數本益比_id : 本益比"""
+        s = self.fetch_taiex_pe(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 13.4 else (3 if x < 15.52 else 0))    
+    
+    
 # =========================
 #   Example Usage
 # =========================
