@@ -1,72 +1,88 @@
-# CSV to Report Generator Usage Guide
+# TWMarketWatch 專案說明
 
-## Overview
-The `csv_to_report.py` script generates Excel reports from CSV data files and JSON measure profiles.
+本專案用於抓取台灣股市相關的總經、技術及評價面指標，並生成分析報告。
 
-## Input Files Required
-1. **measure_value.csv** - Historical values for each measure (big5 encoding)
-2. **measure_score.csv** - Scores for each measure (big5 encoding)  
-3. **measure_profile.json** - Measure metadata with name and unit (utf-8 encoding)
+## 專案架構
 
-## Output
-**report_output.xlsx** with two sheets:
-- **Report**: Detailed measure data with historical values, latest values, and scores
-- **Summary**: Category totals showing score sums for each measure category
+- **core/**: 核心邏輯程式碼
+  - `config.py`: 設定檔 (API URL, Key 等)
+  - `base_measure.py`: 基礎類別，處理 API 請求與共用邏輯
+  - `measure_value.py`: 負責抓取各項指標的數值
+  - `measure_score.py`: 繼承自 `MeasureValue`，負責計算指標分數
+  - `csv_to_report.py`: 產生 CSV 報告的主程式
+- **data/**: 資料存放目錄 (CSV, JSON 設定檔)
+- **docs/**: 產出的報告存放目錄
+- **tests/**: 單元測試
 
-## Usage
+## 安裝需求
 
-### Basic Usage
+請確保已安裝 Python 3.8+ 及以下套件：
+
 ```bash
-python csv_to_report.py
+pip install pandas requests openpyxl
 ```
 
-### Programmatic Usage
+## 使用方式
+
+### 1. 產生分析報告
+
+使用 `core.csv_to_report` 模組來產生報告。您可以透過命令列參數指定輸入與輸出檔案。
+
+```bash
+# 基本用法 (使用預設路徑)
+python3 -m core.csv_to_report
+
+# 指定輸出檔案與日期範圍
+python3 -m core.csv_to_report --output_file docs/my_report.csv --start_date 2024/01/01
+```
+
+**參數說明:**
+- `--value_file`: 數值資料 CSV 路徑 (預設: `data/measure_value.csv`)
+- `--score_file`: 分數資料 CSV 路徑 (預設: `data/measure_score.csv`)
+- `--profile_file`: 指標設定檔 JSON 路徑 (預設: `data/measure_profile.json`)
+- `--output_file`: 輸出報告路徑 (預設: `docs/test_report.csv`)
+- `--start_date`: 報告開始日期 (格式: YYYY/MM/DD)
+- `--end_date`: 報告結束日期 (格式: YYYY/MM/DD)
+
+### 2. 程式化呼叫
+
+您也可以在 Python 程式中直接使用核心類別：
+
 ```python
-from csv_to_report import CSVToReportGenerator
+from core.measure_value import MeasureValue
+from core.measure_score import MeasureScore
 
-# Create generator
-generator = CSVToReportGenerator(
-    "measure_value.csv", 
-    "measure_score.csv", 
-    "measure_profile.json"
-)
+# 初始化
+mv = MeasureValue("data/measure_profile.json")
 
-# Generate report
-generator.generate_report("custom_output.xlsx")
+# 抓取單一指標數值
+series = mv.compute_one("加權指數乖離率_id", "2024-01-01", "2024-12-31")
+print(series)
+
+# 計算所有指標並存為 CSV
+mv.to_csv("2024-01-01", "2024-12-31", output_path="data/measure_value.csv")
 ```
 
-## Report Structure
+## 測試
 
-### Report Sheet Layout
-- **Column G**: 指標ID (Measure ID)
-- **Column H**: 指標名稱 (Measure Name from profile)
-- **Column I**: 面向分類 (Category classification)
-- **Columns J-P**: 歷史數值 (Historical values from CSV)
-- **Column W**: 最新數值 (Latest value)
-- **Column X**: 分數 (Latest score)
+本專案包含單元測試，確保核心邏輯正確。
 
-### Categories
-Measures are automatically classified into three categories:
-- **總經面指標** (Macro-economic indicators): 9 measures
-- **技術面指標** (Technical indicators): 6 measures  
-- **評價面指標** (Valuation indicators): 10 measures
-
-### Summary Sheet
-Shows total scores for each category with measure counts.
-
-## Testing
-Run the test script to verify functionality:
 ```bash
-python test_csv_to_report.py
+python3 tests/test_core.py
 ```
 
-## Requirements
-- pandas >= 2.0.0
-- openpyxl >= 3.1.0
-- json5 >= 0.9.0
+## 資料檔案說明
 
-The script automatically handles:
-- Big5 encoding for CSV files
-- UTF-8 encoding for JSON files
-- Column name cleaning (removes extra spaces and newlines)
-- Proper Excel formatting with headers and styling
+- **measure_value.csv**: 儲存各指標的歷史數值 (Big5 編碼)
+- **measure_score.csv**: 儲存各指標的歷史分數 (Big5 編碼)
+- **measure_profile.json**: 定義指標的名稱、單位與對應的函式 (UTF-8 編碼)
+
+## 報告結構
+
+產出的 CSV 報告包含以下資訊：
+- **類別**: 指標分類 (總經面、技術面、評價面)
+- **指標名稱**: 指標的中文名稱
+- **單位**: 指標單位
+- **歷史日期欄位**: 該日期的指標數值
+- **分數**: 該指標的最新評分
+- **類別總分**: 該類別所有指標的分數總和

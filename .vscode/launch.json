@@ -1,0 +1,35 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Test Core",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_core.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Test Real Connection",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/tests/test_real_connection.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Generate Report",
+            "type": "python",
+            "request": "launch",
+            "module": "core.csv_to_report",
+            "args": ["--output_file", "docs/debug_report.csv"],
+            "console": "integratedTerminal"
+        }
+    ]
+}

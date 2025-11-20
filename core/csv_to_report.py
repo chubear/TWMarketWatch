@@ -5,45 +5,27 @@ CSV to Excel Report Generator
 
 This script processes measure data from CSV files and JSON profile to generate
 an Excel report with historical values, latest values, scores, and summary.
-
-Requirements:
-- measure_value.csv: Historical values for each measure
-- measure_score.csv: Scores for each measure  
-- measure_profile.json: Measure metadata (name, unit)
-
-Output:
-- report_output.csv: CSV file with Report and Summary sheets
 """
 
 import pandas as pd
 import json
-from openpyxl.utils.dataframe import dataframe_to_rows
-from typing import Dict, List, Tuple
 import os
+import argparse
 from datetime import datetime
-import html as ihtml
-from typing import Dict, List, Optional
+from typing import Dict, List, Tuple, Optional
+from .config import Config
 
 class CSVToReportGenerator:
     
     def __init__(self, value_file: str, score_file: str, measure_profile_file: str, categories: dict,
-                  frequency: str = 'ME'):
+                  frequency: str = 'M'):
         """
         Initialize the generator with input files
-        
-        Args:
-            value_file: Path to measure_value.csv
-            score_file: Path to measure_score.csv  
-            measure_profile_file: Path to measure_profile.json
-            categories: Dictionary of measure categories
-            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings, default: 去年底~今日
-            frequency: Data frequency, e.g. '月', default: '月'
         """
         self.value_file = value_file
         self.score_file = score_file
         self.measure_profile_file = measure_profile_file
         self.categories = categories
-
         self.frequency = frequency
         
     def clean_column_name(self, col_name: str) -> str:
@@ -53,16 +35,21 @@ class CSVToReportGenerator:
     def load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, Dict]:
         """
         Load and clean data from input files
-        
-        Returns:
-            Tuple of (value_df, score_df, measure_profile_dict)
         """
         # Load CSV files with big5 encoding
-        value_df = pd.read_csv(self.value_file, encoding='big5')
-        score_df = pd.read_csv(self.score_file, encoding='big5')
+        try:
+            value_df = pd.read_csv(self.value_file, encoding='big5')
+            score_df = pd.read_csv(self.score_file, encoding='big5')
+        except Exception as e:
+            # Try utf-8-sig if big5 fails
+            print(f"Failed to load with big5, trying utf-8-sig: {e}")
+            value_df = pd.read_csv(self.value_file, encoding='utf-8-sig')
+            score_df = pd.read_csv(self.score_file, encoding='utf-8-sig')
+
         # Ensure 'Date' column is present
         if 'Date' not in value_df.columns or 'Date' not in score_df.columns:
             raise ValueError("Both CSV files must contain a 'Date' column.")
+        
         #Date column should be in datetime format
         value_df['Date'] = pd.to_datetime(value_df['Date'])
         score_df['Date'] = pd.to_datetime(score_df['Date'])
@@ -91,15 +78,6 @@ class CSVToReportGenerator:
                             measure_profile: Dict) -> pd.DataFrame:
         """
         Create the main report dataframe with proper column layout
-        
-        Args:
-            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings
-            value_df: DataFrame with historical values
-            score_df: DataFrame with scores
-            measure_profile: Measure profile dictionary
-            
-        Returns:
-            DataFrame ready for display
         """
         report_data = []
         # filter value_df and score_df by display_period
@@ -129,12 +107,20 @@ class CSVToReportGenerator:
             for date, value in zip(date_columns, historical_values):
                 row[datetime.strftime(date, '%Y-%m-%d')] = value
 
-            row['score'] = score_df[measure_id].iloc[-1]                
+            # Get latest score
+            if not score_df.empty and measure_id in score_df.columns:
+                 row['score'] = score_df[measure_id].iloc[-1]
+            else:
+                 row['score'] = 0
+
             report_data.append(row)
         
 
         # Convert to DataFrame
         report_df = pd.DataFrame(report_data)
+        if report_df.empty:
+            return pd.DataFrame()
+
         # sum of scores by category
         report_df['score_total'] = report_df.groupby('category')['score'].transform('sum')
 
@@ -161,10 +147,6 @@ class CSVToReportGenerator:
     def generate_report(self, display_period: tuple, output_file: str = "report_output.csv"):
         """
         Generate the complete Html report
-        
-        Args:
-            display_period: Tuple of (start_date, end_date) as 'YYYY/MM/DD' strings
-            output_file: Output html file path
         """
         print("Loading data...")
         value_df, score_df, measure_profile = self.load_data()
@@ -177,6 +159,10 @@ class CSVToReportGenerator:
         # Create the report DataFrame
         report_df = self.create_report_sheet(display_period, value_df, score_df, measure_profile)
 
+        if report_df.empty:
+            print("Report DataFrame is empty.")
+            return
+
         rename_dict = {
             'category': '類別',
             'measure_name': '指標名稱',
@@ -186,15 +172,22 @@ class CSVToReportGenerator:
         }
         report_df = report_df.rename(columns=rename_dict)
         report_df.to_csv(output_file, index=False, encoding='utf-8-sig')
+        print(f"Report generated: {output_file}")
 
 def main():
-    """Main function to run the report generator"""
+    parser = argparse.ArgumentParser(description="Generate CSV Report")
+    parser.add_argument("--value_file", default="data/measure_value.csv", help="Path to measure_value.csv")
+    parser.add_argument("--score_file", default="data/measure_score.csv", help="Path to measure_score.csv")
+    parser.add_argument("--profile_file", default="data/measure_profile.json", help="Path to measure_profile.json")
+    parser.add_argument("--output_file", default="docs/test_report.csv", help="Output file path")
+    parser.add_argument("--start_date", default="2024/12/1", help="Start date (YYYY/MM/DD)")
+    parser.add_argument("--end_date", default=datetime.now().strftime('%Y/%m/%d'), help="End date (YYYY/MM/DD)")
     
+    args = parser.parse_args()
+
     # Input
-    display_period = ('2024/12/1',datetime.now().strftime('%Y/%m/%d'))
-    value_file = "data/measure_value.csv"
-    score_file = "data/measure_score.csv"
-    measure_profile_file = "data/measure_profile.json"
+    display_period = (args.start_date, args.end_date)
+    
     categories = {
             "總經面指標": [
                 "台灣領先指標_id", "ISM製造業指數_id", "台灣外銷訂單_id", 
@@ -212,15 +205,16 @@ def main():
                 "台灣高股息指數股價淨值比_id", "OTC指數股價淨值比_id"
             ]
         }
+    
     # Check if files exist
-    for file_path in [value_file, score_file, measure_profile_file]:
+    for file_path in [args.value_file, args.score_file, args.profile_file]:
         if not os.path.exists(file_path):
             print(f"Error: File not found: {file_path}")
             return
     
     # Generate report
-    generator = CSVToReportGenerator(value_file, score_file, measure_profile_file, categories)
-    generator.generate_report(display_period, output_file="docs/test_report.csv")
+    generator = CSVToReportGenerator(args.value_file, args.score_file, args.profile_file, categories)
+    generator.generate_report(display_period, output_file=args.output_file)
 
 
 if __name__ == "__main__":
