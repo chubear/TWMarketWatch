@@ -151,53 +151,161 @@ class MeasureValue:
     # ==============================================
 
     def fetch_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數乖離率_id : 67日乖離率"""
+        """加權指數乖離率_id : 60日乖離率"""
+        stock_id = 'TWA00'  # TAIEX
+        field = '乖離率60日'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
         """
-        Common method to fetch data from the API.
-        """
-        df = self.fetch_data_from_api('TWA00', '價格_BIAS_67D', start_date, end_date)
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_taiex_bias returned empty data")
-        if '價格_BIAS_67D' not in df.columns:
-            raise ValueError(f"Column '價格_BIAS_67D' not found. Available columns: {list(df.columns)}")
-        return df['價格_BIAS_67D'].dropna()    
+        return df   
         
 
     def fetch_otc_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """OTC 指數乖離率_id : 67日乖離率"""
-        df = self.fetch_data_from_api('TWC00', '價格_BIAS_67D', start_date, end_date)
+        """OTC 指數乖離率_id : 60日乖離率"""
+        stock_id = 'TWC00'  # OTC
+        field = '乖離率60日'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_otc_bias returned empty data")
-        if '價格_BIAS_67D' not in df.columns:
-            raise ValueError(f"Column '價格_BIAS_67D' not found. Available columns: {list(df.columns)}")
-        return df['價格_BIAS_67D'].dropna()
+        return df
 
     def fetch_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數MACD_id : MACD線"""
-        df = self.fetch_data_from_api('TWA00', '價格_MACD_12D_26D_9D', start_date, end_date)
-        if df.empty: raise ValueError("fetch_taiex_macd returned empty data")
-        # MACD returns 3 columns: dif, macd, dif-macd. We want the 2nd one (MACD)
-        return df['價格_MACD_12D_26D_9D_2'].dropna()
+        stock_id = 'TWA00'  # TAIEX
+        field = '月MACD'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_macd returned empty data")
+        return df
 
     def fetch_otc_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數MACD_id"""
-        df = self.fetch_data_from_api('TWC00', '價格_MACD_12D_26D_9D', start_date, end_date)
-        if df.empty: raise ValueError("fetch_otc_macd returned empty data")
-        return df['價格_MACD_12D_26D_9D_2'].dropna()
+        stock_id = 'TWC00'  # OTC
+        field = '月MACD'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_otc_macd returned empty data")
+        return df
 
     def fetch_taiex_dif(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數DIF_id"""
-        df = self.fetch_data_from_api('TWA00', '價格_MACD_12D_26D_9D', start_date, end_date)
-        if df.empty: raise ValueError("fetch_taiex_dif returned empty data")
-        # We want the 1st one (DIF)
-        return df['價格_MACD_12D_26D_9D_1'].dropna()
+        stock_id = 'TWA00'  # TAIEX
+        field = '月DIF'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_dif returned empty data")
+        return df
     
     def fetch_taiex_adx(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數ADX_id"""
-        df = self.fetch_data_from_api('TWA00', 'ADX_14D', start_date, end_date)
-        if df.empty: raise ValueError("fetch_taiex_adx returned empty data")
-        # We want the 1st one (ADX)
-        return df['ADX_14D_1'].dropna()
+        stock_id = 'TWA00'  # TAIEX
+        field = '月ADX14'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailystatistics`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_adx returned empty data")
+        return df
     
     def fetch_taiex_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數本益比_id"""
@@ -456,26 +564,4 @@ class MeasureValue:
             raise ValueError("fetch_taiex_pe returned empty data")
         return df
 
-# =========================
-#   Example Usage
-# =========================
-if __name__ == "__main__":
-    import os
-    mv = MeasureValue(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"),engine=default_engine())
 
-    # 1) Compute single measure
-    # s = mv.compute_one("加權指數本益比_id", "2025-07-01", "2025-12-31")
-    # print(s.head())
-    
-    # 2) Compute all measures
-    all_df = mv.compute_all("2024-07-01", "2025-12-31", frequency="Q")
-    print(all_df)  
-
-    # 3) Compute all and output to CSV
-    # mv.to_csv(
-    #     start_date="2024-01-01",
-    #     end_date="2025-12-31",
-    #     output_path="measure_value.csv",
-    #     frequency="Q",
-    #     date_format="%Y-%m-%d",
-    # )

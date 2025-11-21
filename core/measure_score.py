@@ -149,7 +149,7 @@ class MeasureScore:
         s = self.mv.fetch_otc_macd(start_date, end_date)
         return s.apply(lambda x: 4 if x > 3.57 else (3 if x > -5.68 else 0))    
     
-    def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+    def calc_score_taiex_dif(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數DIF_id : DIF"""
         s = self.mv.fetch_taiex_dif(start_date, end_date)
         return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
@@ -184,26 +184,27 @@ class MeasureScore:
         s = self.mv.fetch_otc_pe(start_date, end_date)
         return s.apply(lambda x: 4 if x < 17.64 else (3 if x < 22.2 else 0)) 
     
-# =========================
-#   Example Usage
-# =========================
-if __name__ == "__main__":
-    import os
-    ms = MeasureScore(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"))
+    def calc_score_taiex_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """加權指數股價淨值比_id : 股價淨值比"""
+        s = self.mv.fetch_taiex_pb(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 1.63 else (3 if x < 1.76 else 0)) 
 
-    # 1) Compute single measure
-    # s = ms.compute_one("加權指數乖離率_id", "2025-07-01", "2025-12-31")
-    # print(s.head())
+    def calc_score_tw50_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣50指數股價淨值比_id : 股價淨值比"""
+        s = self.mv.fetch_tw50_pb(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 1.81 else (3 if x < 1.96 else 0)) 
+
+    def calc_score_mid100_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣中型100指數股價淨值比_id : 股價淨值比"""
+        s = self.mv.fetch_mid100_pb(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 1.36 else (3 if x < 1.55 else 0)) 
     
-    # 2) Compute all measures
-    # all_df = ms.compute_all("2024-07-01", "2025-12-31", frequency="Q")
-    # print(all_df)  
-
-    # 3) Compute all and output to CSV
-    # ms.to_csv(
-    #     start_date="2024-01-01",
-    #     end_date="2025-12-31",
-    #     output_path="measure_score.csv",
-    #     frequency="Q",
-    #     date_format="%Y-%m-%d",
-    # )
+    def calc_score_highdiv_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣高股息指數股價淨值比_id : 股價淨值比"""
+        s = self.mv.fetch_highdiv_pb(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 1.44 else (3 if x < 1.84 else 0)) 
+    
+    def calc_score_otc_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """OTC 指數股價淨值比_id : 股價淨值比"""
+        s = self.mv.fetch_otc_pb(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 1.64 else (3 if x < 1.97 else 0))
