@@ -149,7 +149,7 @@ class MeasureValue:
     # ==============================================
     #   Individual Measure Methods
     # ==============================================
-    
+
     def fetch_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 67日乖離率"""
         """
@@ -329,6 +329,84 @@ class MeasureValue:
     def fetch_taiex_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數股價淨值比_id"""
         stock_id = 'TWA00'  # TAIEX
+        field = '股價淨值比'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
+
+    def fetch_tw50_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣50指數股價淨值比_id"""
+        stock_id = 'TWA50'  # TAIEX
+        field = '股價淨值比'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
+
+    def fetch_mid100_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣中型100指數股價淨值比_id"""
+        stock_id = 'TWA51'  # TAIEX
+        field = '股價淨值比'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
+
+    def fetch_highdiv_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣高股息指數股價淨值比_id"""
+        stock_id = 'TWA54'  # TAIEX
         field = '股價淨值比'
 
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')

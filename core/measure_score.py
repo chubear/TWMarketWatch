@@ -4,8 +4,7 @@ import json
 from typing import Union, Any, Dict, Callable
 from pathlib import Path
 import pandas as pd
-from .config import Config
-from .data_fetcher import DataFetcher, DateLike
+from .data_fetcher import  DateLike
 from .dbconfig import default_engine
 from .measure_value import MeasureValue
 
@@ -21,6 +20,7 @@ class MeasureScore:
         self.encoding = encoding
         self.engine = engine or default_engine()
         self.measure_profile: Dict[str, Dict[str, Any]] = self._load_measure_profile()
+        self.mv = MeasureValue(profile_path, encoding, engine or default_engine())
 
     def _load_measure_profile(self) -> Dict[str, Dict[str, Any]]:
         """Load measure profile from JSON file"""
@@ -129,41 +129,60 @@ class MeasureScore:
     
     def calc_score_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 67日乖離率"""
-        s = self.fetch_taiex_bias(start_date, end_date)
+        s = self.mv.fetch_taiex_bias(start_date, end_date)
         # Score 4 if > 2.72,3 elif >-2.68  else 0
         return s.apply(lambda x: 4 if x > 2.72 else (3 if x > -2.68 else 0))
 
     def calc_score_otc_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數乖離率_id : 67日乖離率"""
         # Score 4 if > 3.0,3 elif >-3.94  else 0
-        s = MeasureValue.fetch_otc_bias(start_date, end_date)
+        s = self.mv.fetch_otc_bias(start_date, end_date)
         return s.apply(lambda x: 4 if x > 3.0 else (3 if x > -3.94 else 0))
 
     def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數MACD_id : MACD"""
-        s = MeasureValue.fetch_taiex_macd(start_date, end_date)
+        s = self.mv.fetch_taiex_macd(start_date, end_date)
         return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
     
     def calc_score_otc_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC MACD_id : MACD"""
-        s = MeasureValue.fetch_otc_macd(start_date, end_date)
+        s = self.mv.fetch_otc_macd(start_date, end_date)
         return s.apply(lambda x: 4 if x > 3.57 else (3 if x > -5.68 else 0))    
     
     def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數DIF_id : DIF"""
-        s = MeasureValue.fetch_taiex_dif(start_date, end_date)
+        s = self.mv.fetch_taiex_dif(start_date, end_date)
         return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
     
     def calc_score_taiex_adx(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數ADX_id : ADX"""
-        s = MeasureValue.fetch_taiex_adx(start_date, end_date)
+        s = self.mv.fetch_taiex_adx(start_date, end_date)
         return s.apply(lambda x: 4 if x > 19.61 else (3 if x > 12.2 else 0))
 
     def calc_score_taiex_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數本益比_id : 本益比"""
-        s = MeasureValue.fetch_taiex_pe(start_date, end_date)
+        s = self.mv.fetch_taiex_pe(start_date, end_date)
         return s.apply(lambda x: 4 if x < 13.4 else (3 if x < 15.52 else 0))    
+
+    def calc_score_tw50_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣50指數本益比_id : 本益比"""
+        s = self.mv.fetch_tw50_pe(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 13.5 else (3 if x < 15.4 else 0))        
     
+    def calc_score_mid100_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣中型100指數本益比 : 本益比"""
+        s = self.mv.fetch_mid100_pe(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 13.8 else (3 if x < 15.7 else 0))
+
+    def calc_score_highdiv_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣高股息指數本益比 : 本益比"""
+        s = self.mv.fetch_highdiv_pe(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 11.8 else (3 if x < 14.34 else 0))    
+    
+    def calc_score_otc_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """OTC 指數本益比 : 本益比"""
+        s = self.mv.fetch_otc_pe(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 17.64 else (3 if x < 22.2 else 0)) 
     
 # =========================
 #   Example Usage

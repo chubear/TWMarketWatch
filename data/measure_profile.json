@@ -71,6 +71,24 @@
     "func_value": "fetch_taiex_pb",
     "func_score": "calc_score_taiex_pb"
   },
+  "台灣50指數股價淨值比_id": {
+    "name": "台灣50指數股價淨值比",
+    "unit": "倍",
+    "func_value": "fetch_tw50_pb",
+    "func_score": "calc_score_tw50_pb"
+  },
+  "台灣中型100指數股價淨值比_id": {
+    "name": "台灣中型100指數股價淨值比",
+    "unit": "倍",
+    "func_value": "fetch_mid100_pb",
+    "func_score": "calc_score_mid100_pb"
+  },
+  "台灣高股息指數股價淨值比_id": {
+    "name": "台灣高股息指數股價淨值比",
+    "unit": "倍",
+    "func_value": "fetch_highdiv_pb",
+    "func_score": "calc_score_highdiv_pb"
+  },
   "OTC指數股價淨值比_id": {
     "name": "OTC指數股價淨值比",
     "unit": "倍",
