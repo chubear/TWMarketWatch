@@ -1,27 +1,47 @@
 from __future__ import annotations
 
 import sys, os
-from typing import Union, Any
+import json
+from typing import Union, Any, Dict, Callable
 from pathlib import Path
 import pandas as pd
-import requests
-from dbconfig import default_engine
-from sqlalchemy import  text
-#新增路徑
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from config import Config
-from base_measure import BaseMeasure, DateLike
+from .dbconfig import default_engine
+from .config import Config
+from .data_fetcher import DataFetcher, DateLike
 
 
-class MeasureValue(BaseMeasure):
+class MeasureValue:
     """
     Responsible for calling the corresponding measure method in this class 
     according to the settings in measure_profile.json, generating a DataFrame or CSV of measure_value.
     """
 
     def __init__(self, profile_path: Union[str, Path], encoding: str = "utf-8-sig", engine=None):
-        super().__init__(profile_path, encoding)
+        self.profile_path = Path(profile_path)
+        self.encoding = encoding
         self.engine = engine or default_engine()
+        self.measure_profile: Dict[str, Dict[str, Any]] = self._load_measure_profile()
+
+    def _load_measure_profile(self) -> Dict[str, Dict[str, Any]]:
+        """Load measure profile from JSON file"""
+        with self.profile_path.open("r", encoding=self.encoding) as f:
+            return json.load(f)
+
+    def _get_measure_func(self, measure_id: str) -> Callable[..., pd.Series]:
+        """Get the method corresponding to the measure_id"""
+        cfg = self.measure_profile.get(measure_id)
+        if cfg is None:
+            raise KeyError(f"measure_id {measure_id} does not exist in measure_profile.json")
+
+        func_name = cfg.get("func_value")
+        if not isinstance(func_name, str):
+            raise TypeError(f"measure_id {measure_id} 'func_value' setting must be a string (method name)")
+
+        if not hasattr(self, func_name):
+            raise AttributeError(f"{self.__class__.__name__} does not have method '{func_name}' (for {measure_id})")
+
+        return getattr(self, func_name)
+
     # =========================
     #   Public API
     # =========================
@@ -30,9 +50,16 @@ class MeasureValue(BaseMeasure):
         measure_id: str,
         start_date: DateLike,
         end_date: DateLike,
-        **kwargs: Any,
     ) -> pd.Series:
-        return super().compute_one(measure_id, start_date, end_date, "func_value", **kwargs)
+        """Compute a single measure"""
+        func = self._get_measure_func(measure_id)
+        series = func(start_date, end_date)
+
+        if not isinstance(series, pd.Series):
+            raise TypeError(f"{measure_id} function {func.__name__} did not return pd.Series")
+
+        series.name = measure_id
+        return series
 
     def compute_all(
         self,
@@ -41,7 +68,29 @@ class MeasureValue(BaseMeasure):
         how: str = "outer",
         frequency: str = "D"
     ) -> pd.DataFrame:
-        return super().compute_all(start_date, end_date, "func_value", how, frequency)
+        """Compute all measures in the profile"""
+        series_dict: Dict[str, pd.Series] = {}
+
+        for measure_id in self.measure_profile.keys():
+            # Check if the measure has func_value
+            if "func_value" not in self.measure_profile[measure_id]:
+                continue
+                 
+            print(f"Computing {measure_id} ...")
+            try:
+                s = self.compute_one(measure_id, start_date, end_date)
+                series_dict[measure_id] = s
+            except Exception as e:
+                print(f"Error computing {measure_id}: {e}")
+
+        if not series_dict:
+            return pd.DataFrame()
+
+        df = pd.concat(series_dict.values(), axis=1, join=how)
+        df = df.groupby(df.index.to_period(frequency)).tail(1)
+        df.index = df.index.to_period(frequency).to_timestamp(how='end')
+        
+        return df
 
     def to_csv(
         self,
@@ -53,7 +102,49 @@ class MeasureValue(BaseMeasure):
         csv_encoding: str = "utf-8-sig",
         date_format: str = "%Y/%m/%d",
     ) -> pd.DataFrame:
-        return super().to_csv(start_date, end_date, "func_value", output_path, how, frequency, csv_encoding, date_format)
+        """Compute all and save to CSV"""
+        df = self.compute_all(
+            start_date=start_date,
+            end_date=end_date,
+            how=how,
+            frequency=frequency
+        )
+
+        df_out = df.copy()
+        if isinstance(df_out.index, pd.DatetimeIndex):
+            df_out.insert(0, "Date", df_out.index.strftime(date_format))
+        else:
+            df_out.insert(0, "Date", df_out.index.astype(str))
+
+        df_out.reset_index(drop=True, inplace=True)
+
+        output_path = Path(output_path)
+        df_out.to_csv(output_path, index=False, encoding=csv_encoding)
+        print(f"Saved to {output_path}")
+        return df_out
+
+    # =========================
+    #   Helper Methods
+    # =========================
+    def fetch_data_from_api(
+        self,
+        stock_id: str,
+        field: str,
+        start_date: DateLike,
+        end_date: DateLike,
+    ) -> pd.DataFrame:
+        """Fetch data from API using DataFetcher utility"""
+        return DataFetcher.fetch_from_api(stock_id, field, start_date, end_date)
+    
+    def fetch_data_from_db(
+        self,
+        field: str,
+        query: str,
+        engine,
+        params: Dict[str, Any] = None,
+    ) -> pd.Series:
+        """Fetch data from database using DataFetcher utility"""
+        return DataFetcher.fetch_from_db(field, query, engine, params)
 
     # ==============================================
     #   Individual Measure Methods
@@ -64,77 +155,46 @@ class MeasureValue(BaseMeasure):
         """
         Common method to fetch data from the API.
         """
-        stock_id = 'TWA00'  # TAIEX
-        fields = ['價格_BIAS_67D']
-
-        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
-        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-
-        params = {
-            'stock_id': stock_id,
-            'start': start_str,
-            'end': end_str,
-            'fields': fields,
-            'format': 'json',
-            'api_key': Config.API_KEY
-        }
-
-        try:
-            response = requests.get(Config.API_URL, params=params)
-            response.raise_for_status()
-            result = response.json()
-
-            if result.get("status") != "success":
-                raise ValueError(f"API returned error status: {result.get('status')}")
-            
-            data = result.get("data", {}).get(stock_id, {}).get("data", [])
-            df = pd.DataFrame.from_records(data)
-            
-            if not df.empty:
-                df['日期'] = pd.to_datetime(df['日期'])
-                df = df.set_index('日期')
-                return df
-            else:
-                # Return empty DataFrame with correct index name if possible, or just empty
-                return pd.DataFrame()
-                
-        except requests.RequestException as e:
-            print(f"API request failed: {e}")
-            raise
-        except Exception as e:
-            print(f"Data processing failed: {e}")
-            raise
+        df = self.fetch_data_from_api('TWA00', '價格_BIAS_67D', start_date, end_date)
+        if df.empty: 
+            raise ValueError("fetch_taiex_bias returned empty data")
+        if '價格_BIAS_67D' not in df.columns:
+            raise ValueError(f"Column '價格_BIAS_67D' not found. Available columns: {list(df.columns)}")
+        return df['價格_BIAS_67D'].dropna()    
         
 
     def fetch_otc_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數乖離率_id : 67日乖離率"""
-        df = self.fetch_data('TWC00', start_date, end_date, '價格_BIAS_67D')
-        if df.empty: raise ValueError("fetch_otc_bias returned empty data")
+        df = self.fetch_data_from_api('TWC00', '價格_BIAS_67D', start_date, end_date)
+        if df.empty: 
+            raise ValueError("fetch_otc_bias returned empty data")
+        if '價格_BIAS_67D' not in df.columns:
+            raise ValueError(f"Column '價格_BIAS_67D' not found. Available columns: {list(df.columns)}")
         return df['價格_BIAS_67D'].dropna()
 
     def fetch_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數MACD_id : MACD線"""
-        df = self.fetch_data('TWA00', start_date, end_date, '價格_MACD_12D_26D_9D')
+        df = self.fetch_data_from_api('TWA00', '價格_MACD_12D_26D_9D', start_date, end_date)
         if df.empty: raise ValueError("fetch_taiex_macd returned empty data")
         # MACD returns 3 columns: dif, macd, dif-macd. We want the 2nd one (MACD)
         return df['價格_MACD_12D_26D_9D_2'].dropna()
 
     def fetch_otc_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數MACD_id"""
-        df = self.fetch_data('TWC00', start_date, end_date, '價格_MACD_12D_26D_9D')
+        df = self.fetch_data_from_api('TWC00', '價格_MACD_12D_26D_9D', start_date, end_date)
         if df.empty: raise ValueError("fetch_otc_macd returned empty data")
         return df['價格_MACD_12D_26D_9D_2'].dropna()
 
     def fetch_taiex_dif(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數DIF_id"""
-        df = self.fetch_data('TWA00', start_date, end_date, '價格_MACD_12D_26D_9D')
+        df = self.fetch_data_from_api('TWA00', '價格_MACD_12D_26D_9D', start_date, end_date)
         if df.empty: raise ValueError("fetch_taiex_dif returned empty data")
         # We want the 1st one (DIF)
         return df['價格_MACD_12D_26D_9D_1'].dropna()
     
     def fetch_taiex_adx(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數ADX_id"""
-        df = self.fetch_data('TWA00', start_date, end_date, 'ADX_14D')
+        df = self.fetch_data_from_api('TWA00', 'ADX_14D', start_date, end_date)
         if df.empty: raise ValueError("fetch_taiex_adx returned empty data")
         # We want the 1st one (ADX)
         return df['ADX_14D_1'].dropna()
@@ -142,114 +202,180 @@ class MeasureValue(BaseMeasure):
     def fetch_taiex_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數本益比_id"""
         stock_id = 'TWA00'  # TAIEX
+        field = '本益比'
+
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
         end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-        sql = text(f"""
-            SELECT 日期, 本益比
+
+        sql = f"""
+            SELECT 日期, {field}
             FROM `md_cm_ta_dailyquotes`
             WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
             ORDER BY 日期 asc
-        """)
-        
-        df = pd.read_sql(
-            sql,
-            self.engine,
-            params={
+        """
+        params={
+                "field": field,
                 "ticker": stock_id,
                 "start": start_str,
                 "end": end_str
             }
-        )
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_taiex_pe returned empty data")
-        
-        df['日期'] = pd.to_datetime(df['日期'])        
-        df = df.set_index('日期')
         return df
+    def fetch_tw50_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣50指數本益比_id"""
+        stock_id = 'TWA50'  # TAIEX
+        field = '本益比'
 
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
+    def fetch_mid100_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣中型100指數本益比_id"""
+        stock_id = 'TWA51'  
+        field = '本益比'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
+    def fetch_highdiv_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣高股息指數本益比_id"""
+        stock_id = 'TWA54'  
+        field = '本益比'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
+        end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
+
+        sql = f"""
+            SELECT 日期, {field}
+            FROM `md_cm_ta_dailyquotes`
+            WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
+            ORDER BY 日期 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiex_pe returned empty data")
+        return df
     def fetch_otc_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數本益比_id"""
 
         stock_id = 'TWC00'  # OTC
+        field = '本益比'
+
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
         end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-        sql = text(f"""
-            SELECT 日期, 本益比
+
+        sql = f"""
+            SELECT 日期, {field}
             FROM `md_cm_ta_dailyquotes`
             WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
             ORDER BY 日期 asc
-        """)
-        
-        df = pd.read_sql(
-            sql,
-            self.engine,
-            params={
+        """
+        params={
+                "field": field,
                 "ticker": stock_id,
                 "start": start_str,
                 "end": end_str
             }
-        )
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_taiex_pe returned empty data")
-        
-        df['日期'] = pd.to_datetime(df['日期'])        
-        df = df.set_index('日期')
         return df
 
     def fetch_taiex_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數股價淨值比_id"""
         stock_id = 'TWA00'  # TAIEX
+        field = '股價淨值比'
+
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
         end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-        sql = text(f"""
-            SELECT 日期, 股價淨值比
+
+        sql = f"""
+            SELECT 日期, {field}
             FROM `md_cm_ta_dailyquotes`
             WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
             ORDER BY 日期 asc
-        """)
-        
-        df = pd.read_sql(
-            sql,
-            self.engine,
-            params={
+        """
+        params={
+                "field": field,
                 "ticker": stock_id,
                 "start": start_str,
                 "end": end_str
             }
-        )
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_taiex_pe returned empty data")
-        
-        df['日期'] = pd.to_datetime(df['日期'])        
-        df = df.set_index('日期')
         return df
 
     def fetch_otc_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數股價淨值比_id"""
         stock_id = 'TWC00'  # OTC
+        field = '股價淨值比'
+
         start_str = pd.to_datetime(start_date).strftime('%Y-%m-%d')
         end_str = pd.to_datetime(end_date).strftime('%Y-%m-%d')
-        sql = text(f"""
-            SELECT 日期, 股價淨值比
+
+        sql = f"""
+            SELECT 日期, {field}
             FROM `md_cm_ta_dailyquotes`
             WHERE 股票代號 = :ticker AND 日期 BETWEEN :start AND :end
             ORDER BY 日期 asc
-        """)
-        
-        df = pd.read_sql(
-            sql,
-            self.engine,
-            params={
+        """
+        params={
+                "field": field,
                 "ticker": stock_id,
                 "start": start_str,
                 "end": end_str
             }
-        )
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
         if df.empty: 
             raise ValueError("fetch_taiex_pe returned empty data")
-        
-        df['日期'] = pd.to_datetime(df['日期'])        
-        df = df.set_index('日期')
         return df
 
 # =========================
@@ -260,12 +386,12 @@ if __name__ == "__main__":
     mv = MeasureValue(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"),engine=default_engine())
 
     # 1) Compute single measure
-    s = mv.compute_one("加權指數本益比_id", "2025-07-01", "2025-12-31")
-    print(s.head())
+    # s = mv.compute_one("加權指數本益比_id", "2025-07-01", "2025-12-31")
+    # print(s.head())
     
     # 2) Compute all measures
-    # all_df = mv.compute_all("2024-07-01", "2025-12-31", frequency="Q")
-    # print(all_df)  
+    all_df = mv.compute_all("2024-07-01", "2025-12-31", frequency="Q")
+    print(all_df)  
 
     # 3) Compute all and output to CSV
     # mv.to_csv(

@@ -6,10 +6,11 @@
 
 - **core/**: 核心邏輯程式碼
   - `config.py`: 設定檔 (API URL, Key 等)
-  - `base_measure.py`: 基礎類別，處理 API 請求與共用邏輯
+  - `data_fetcher.py`: 資料抓取工具，處理 API 與資料庫請求
   - `measure_value.py`: 負責抓取各項指標的數值
-  - `measure_score.py`: 繼承自 `MeasureValue`，負責計算指標分數
+  - `measure_score.py`: 負責計算指標分數
   - `csv_to_report.py`: 產生 CSV 報告的主程式
+  - `dbconfig.py`: 資料庫連線設定
 - **data/**: 資料存放目錄 (CSV, JSON 設定檔)
 - **docs/**: 產出的報告存放目錄
 - **tests/**: 單元測試

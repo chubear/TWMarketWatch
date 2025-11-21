@@ -32,13 +32,32 @@
   "加權指數ADX_id": {
     "name": "加權指數ADX",
     "unit": "值",
-    "func": "fetch_taiex_adx"
+    "func_value": "fetch_taiex_adx",
+    "func_score": "calc_score_taiex_adx"
   },
   "加權指數本益比_id": {
     "name": "加權指數本益比",
     "unit": "倍",
     "func_value": "fetch_taiex_pe",
     "func_score": "calc_score_taiex_pe"
+  },
+  "台灣50指數本益比_id": {
+    "name": "台灣50指數本益比",
+    "unit": "倍",
+    "func_value": "fetch_tw50_pe",
+    "func_score": "calc_score_tw50_pe"
+  },
+  "台灣中型100指數本益比_id": {
+    "name": "台灣中型100指數本益比",
+    "unit": "倍",
+    "func_value": "fetch_mid100_pe",
+    "func_score": "calc_score_mid100_pe"
+  },
+  "台灣高股息指數本益比_id": {
+    "name": "台灣高股息指數本益比",
+    "unit": "倍",
+    "func_value": "fetch_highdiv_pe",
+    "func_score": "calc_score_highdiv_pe"
   },
   "OTC指數本益比_id": {
     "name": "OTC指數本益比",
