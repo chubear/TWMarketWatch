@@ -149,7 +149,58 @@ class MeasureValue:
     # ==============================================
     #   Individual Measure Methods
     # ==============================================
+    def fetch_taiwan_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣領先指標 : 台灣景氣領先指標"""
+        stock_id = 'TWB20'  
+        field = '數值'
 
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiwan_leading_indicator returned empty data")
+        return df  
+
+    def fetch_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """PMI製造業指數 : PMI製造業指數"""
+        stock_id = '70100'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_pmi_manufacturing_index returned empty data")
+        return df  
+        
     def fetch_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 60日乖離率"""
         stock_id = 'TWA00'  # TAIEX

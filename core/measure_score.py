@@ -126,16 +126,23 @@ class MeasureScore:
     # ==============================================
     #   Score Calculation Methods
     # ==============================================
+    def calc_score_taiwan_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣領先指標_id : 台灣領先指標"""
+        s = self.mv.fetch_taiwan_leading_indicator(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 105.954 else (3 if x > 87.392 else 0))
     
+    def calc_score_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """PMI製造業指數_id : PMI製造業指數"""
+        s = self.mv.fetch_pmi_manufacturing_index(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 52.6 else (3 if x > 47.3 else 0))
+
     def calc_score_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 67日乖離率"""
         s = self.mv.fetch_taiex_bias(start_date, end_date)
-        # Score 4 if > 2.72,3 elif >-2.68  else 0
         return s.apply(lambda x: 4 if x > 2.72 else (3 if x > -2.68 else 0))
 
     def calc_score_otc_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """OTC 指數乖離率_id : 67日乖離率"""
-        # Score 4 if > 3.0,3 elif >-3.94  else 0
         s = self.mv.fetch_otc_bias(start_date, end_date)
         return s.apply(lambda x: 4 if x > 3.0 else (3 if x > -3.94 else 0))
 

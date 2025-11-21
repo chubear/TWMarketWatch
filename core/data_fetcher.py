@@ -18,7 +18,7 @@ class DataFetcher:
     @staticmethod
     def detect_date_column(df: pd.DataFrame) -> str:
         """Detect the date column in the DataFrame"""
-        datelike_columns = ['日期', 'date', 'Date', 'datetime', 'Datetime', 'time', 'Time', 'trading_date', 'TradingDate']
+        datelike_columns = ['日期','年月', 'date', 'Date', 'datetime', 'Datetime', 'time', 'Time', 'trading_date', 'TradingDate']
         for col in datelike_columns:
             if col in df.columns:
                 return col
