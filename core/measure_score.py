@@ -232,17 +232,17 @@ class MeasureScore:
         return s.apply(lambda x: 4 if x < 1.63 else (3 if x < 1.76 else 0)) 
 
     def calc_score_tw50_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """tw50_pb : 股價淨值比"""
+        """台灣50指數股價淨值比_id : 股價淨值比"""
         s = self.mv.fetch_tw50_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.81 else (3 if x < 1.96 else 0)) 
 
     def calc_score_mid100_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """mid100_pb : 股價淨值比"""
+        """台灣中型100指數股價淨值比_id : 股價淨值比"""
         s = self.mv.fetch_mid100_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.36 else (3 if x < 1.55 else 0)) 
     
     def calc_score_highdiv_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """highdiv_pb : 股價淨值比"""
+        """台灣高股息指數股價淨值比_id : 股價淨值比"""
         s = self.mv.fetch_highdiv_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.44 else (3 if x < 1.84 else 0)) 
     
