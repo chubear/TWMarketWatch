@@ -25,7 +25,7 @@ def test_MeasureValue():
     mv.to_csv(
         start_date="2024-01-01",
         end_date="2025-12-31",
-        output_path="measure_value.csv",
+        output_path="data/measure_value.csv",
         frequency="M",
         date_format="%Y-%m-%d",
     )
@@ -44,10 +44,27 @@ def test_MeasureScore():
     ms.to_csv(
         start_date="2024-01-01",
         end_date="2025-12-31",
-        output_path="measure_score.csv",
+        output_path="data/measure_score.csv",
         frequency="M",
         date_format="%Y-%m-%d",
     )
+
+def test_CSVToReportGenerator():
+    from core.csv_to_report import CSVToReportGenerator
+
+    generator = CSVToReportGenerator(
+        value_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_value.csv"),
+        score_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_score.csv"),
+        measure_profile_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"),
+        frequency='M'
+    )
+
+    display_period = ("2025-01-01", "2025-12-31")
+    output_file = "data/test_report_output.csv"
+    generator.generate_report(display_period, output_file=output_file)
+    webapi_file = "/home/chubear/QadrisWebAPI/data/tw_market_watch.csv"
+    generator.generate_report(display_period, output_file=webapi_file)
 if __name__ == '__main__':
-    test_MeasureValue()
-    test_MeasureScore()
+    # test_MeasureValue()
+    # test_MeasureScore()
+    test_CSVToReportGenerator()

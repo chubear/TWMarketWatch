@@ -59,6 +59,8 @@ class MeasureValue:
             raise TypeError(f"{measure_id} function {func.__name__} did not return pd.Series")
 
         series.name = measure_id
+        #小數點後兩位
+        series = series.round(2)
         return series
 
     def compute_all(

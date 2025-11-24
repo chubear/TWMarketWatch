@@ -169,65 +169,7 @@ function buildTable(rows) {
     
     if (tbody.children.length === 0) {
         tbody.innerHTML = '<tr><td colspan="' + Math.max(header.length, 1) + '">無資料列</td></tr>';
-        return;
     }
-
-    // 指定要合併的欄位名稱
-    const columnsToMerge = ['類別', '類別總分'];
-    
-    // 找出要合併的欄位索引
-    const colIndicesToMerge = columnsToMerge
-        .map(colName => header.indexOf(colName))
-        .filter(idx => idx !== -1);
-
-    // Helper function to merge cells in a specific column
-    function mergeCells(colIndex) {
-        const allRows = Array.from(tbody.rows);
-        let i = 0;
-        
-        while (i < allRows.length) {
-            const currentRow = allRows[i];
-            const currentCell = currentRow.cells[colIndex];
-            if (!currentCell) {
-                i++;
-                continue;
-            }
-            
-            const currentValue = currentCell.textContent;
-            let mergeCount = 1;
-            
-            // 向下尋找相同的值
-            for (let j = i + 1; j < allRows.length; j++) {
-                const nextRow = allRows[j];
-                const nextCell = nextRow.cells[colIndex];
-                if (nextCell && nextCell.textContent === currentValue) {
-                    mergeCount++;
-                } else {
-                    break;
-                }
-            }
-            
-            // 如果有需要合併的儲存格
-            if (mergeCount > 1) {
-                currentCell.rowSpan = mergeCount;
-                currentCell.style.verticalAlign = 'middle';
-                // 移除後續相同值的儲存格
-                for (let j = i + 1; j < i + mergeCount; j++) {
-                    const cellToRemove = allRows[j].cells[colIndex];
-                    if (cellToRemove) {
-                        cellToRemove.remove();
-                    }
-                }
-            }
-            
-            i += mergeCount;
-        }
-    }
-
-    // 依序合併指定的欄位（從後面往前合併，避免索引錯亂）
-    colIndicesToMerge.sort((a, b) => b - a).forEach(colIdx => {
-        mergeCells(colIdx);
-    });
 }
 
 /* 從 API JSON 轉換成表格資料結構 */
