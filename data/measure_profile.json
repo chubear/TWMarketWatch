@@ -1,149 +1,149 @@
 {
-  "台灣領先指標_id": {
+  "taiwan_leading_indicator": {
     "name": "台灣領先指標",
     "unit": "值",
     "func_value": "fetch_taiwan_leading_indicator",
     "func_score": "calc_score_taiwan_leading_indicator"
   },
-  "PMI製造業指數_id": {
+  "pmi_manufacturing_index": {
     "name": "PMI製造業指數",
     "unit": "值",
     "func_value": "fetch_pmi_manufacturing_index",
     "func_score": "calc_score_pmi_manufacturing_index"
   },
-  "台灣外銷訂單_id": {
+  "taiwan_export_orders": {
     "name": "台灣外銷訂單",
     "unit": "百萬美元",
     "func_value": "fetch_taiwan_export_orders",
     "func_score": "calc_score_taiwan_export_orders"
   },
-  "台灣工業生產指數_id": {
+  "taiwan_industrial_production": {
     "name": "台灣工業生產指數",
     "unit": "值",
     "func_value": "fetch_taiwan_industrial_production",
     "func_score": "calc_score_taiwan_industrial_production"
   },
-  "台灣貿易收支_id": {
+  "taiwan_trade_balance": {
     "name": "台灣貿易收支",
     "unit": "十億美元",
     "func_value": "fetch_taiwan_trade_balance",
     "func_score": "calc_score_taiwan_trade_balance"
   },
-  "台灣零售銷售_id": {
+  "taiwan_retail_sales": {
     "name": "台灣零售銷售",
     "unit": "十億台幣",
     "func_value": "fetch_taiwan_retail_sales",
     "func_score": "calc_score_taiwan_retail_sales"
   },
-  "台灣失業率_id": {
+  "taiwan_unemployment_rate": {
     "name": "台灣失業率",
     "unit": "%",
     "func_value": "fetch_taiwan_unemployment_rate",
     "func_score": "calc_score_taiwan_unemployment_rate"
   },
-  "台灣CPI_id": {
+  "taiwan_cpi": {
     "name": "台灣CPI",
     "unit": "值",
     "func_value": "fetch_taiwan_cpi",
     "func_score": "calc_score_taiwan_cpi"
   },
-  "台灣M1B-M2_id": {
+  "taiwan_m1b_m2": {
     "name": "台灣M1B-M2",
     "unit": "值",
     "func_value": "fetch_taiwan_m1b_m2",
     "func_score": "calc_score_taiwan_m1b_m2"
   },
-  "加權指數乖離率_id": {
+  "taiex_bias": {
     "name": "加權指數乖離率",
     "unit": "%",
     "func_value": "fetch_taiex_bias",
     "func_score": "calc_score_taiex_bias"
   },
-  "OTC指數乖離率_id": {
+  "otc_bias": {
     "name": "OTC指數乖離率",
     "unit": "%",
     "func_value": "fetch_otc_bias",
     "func_score": "calc_score_otc_bias"
   },
-  "加權指數MACD_id": {
+  "taiex_macd": {
     "name": "加權指數MACD",
     "unit": "值",
     "func_value": "fetch_taiex_macd",
     "func_score": "calc_score_taiex_macd"
   },
-  "OTC指數MACD_id": {
+  "otc_macd": {
     "name": "OTC指數MACD",
     "unit": "值",
     "func_value": "fetch_otc_macd",
     "func_score": "calc_score_otc_macd"
   },
-  "加權指數DIF_id": {
+  "taiex_dif": {
     "name": "加權指數DIF",
     "unit": "值",
     "func_value": "fetch_taiex_dif",
     "func_score": "calc_score_taiex_dif"
   },
-  "加權指數ADX_id": {
+  "taiex_adx": {
     "name": "加權指數ADX",
     "unit": "值",
     "func_value": "fetch_taiex_adx",
     "func_score": "calc_score_taiex_adx"
   },
-  "加權指數本益比_id": {
+  "taiex_pe": {
     "name": "加權指數本益比",
     "unit": "倍",
     "func_value": "fetch_taiex_pe",
     "func_score": "calc_score_taiex_pe"
   },
-  "台灣50指數本益比_id": {
+  "tw50_pe": {
     "name": "台灣50指數本益比",
     "unit": "倍",
     "func_value": "fetch_tw50_pe",
     "func_score": "calc_score_tw50_pe"
   },
-  "台灣中型100指數本益比_id": {
+  "mid100_pe": {
     "name": "台灣中型100指數本益比",
     "unit": "倍",
     "func_value": "fetch_mid100_pe",
     "func_score": "calc_score_mid100_pe"
   },
-  "台灣高股息指數本益比_id": {
+  "highdiv_pe": {
     "name": "台灣高股息指數本益比",
     "unit": "倍",
     "func_value": "fetch_highdiv_pe",
     "func_score": "calc_score_highdiv_pe"
   },
-  "OTC指數本益比_id": {
+  "otc_pe": {
     "name": "OTC指數本益比",
     "unit": "倍",
     "func_value": "fetch_otc_pe",
     "func_score": "calc_score_otc_pe"
   },
-  "加權指數股價淨值比_id": {
+  "taiex_pb": {
     "name": "加權指數股價淨值比",
     "unit": "倍",
     "func_value": "fetch_taiex_pb",
     "func_score": "calc_score_taiex_pb"
   },
-  "台灣50指數股價淨值比_id": {
+  "tw50_pb": {
     "name": "台灣50指數股價淨值比",
     "unit": "倍",
     "func_value": "fetch_tw50_pb",
     "func_score": "calc_score_tw50_pb"
   },
-  "台灣中型100指數股價淨值比_id": {
+  "mid100_pb": {
     "name": "台灣中型100指數股價淨值比",
     "unit": "倍",
     "func_value": "fetch_mid100_pb",
     "func_score": "calc_score_mid100_pb"
   },
-  "台灣高股息指數股價淨值比_id": {
+  "highdiv_pb": {
     "name": "台灣高股息指數股價淨值比",
     "unit": "倍",
     "func_value": "fetch_highdiv_pb",
     "func_score": "calc_score_highdiv_pb"
   },
-  "OTC指數股價淨值比_id": {
+  "otc_pb": {
     "name": "OTC指數股價淨值比",
     "unit": "倍",
     "func_value": "fetch_otc_pb",

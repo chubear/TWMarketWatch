@@ -86,7 +86,7 @@ class MeasureScore:
         if not series_dict:
             return pd.DataFrame()
 
-        df = pd.concat(series_dict.values(), axis=1, join=how).ffill()
+        df = pd.concat(series_dict.values(), axis=1, join=how).ffill()#為了解決資料間頻率不同的問題
         df = df.groupby(df.index.to_period(frequency)).tail(1)
         df.index = df.index.to_period(frequency).to_timestamp(how='end')
         
@@ -127,27 +127,27 @@ class MeasureScore:
     #   Score Calculation Methods
     # ==============================================
     def calc_score_taiwan_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣領先指標_id : 台灣領先指標"""
+        """taiwan_leading_indicator : 台灣領先指標"""
         s = self.mv.fetch_taiwan_leading_indicator(start_date, end_date)
         return s.apply(lambda x: 4 if x > 105.954 else (3 if x > 87.392 else 0))
     
     def calc_score_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """PMI製造業指數_id : PMI製造業指數"""
+        """pmi_manufacturing_index : PMI製造業指數"""
         s = self.mv.fetch_pmi_manufacturing_index(start_date, end_date)
         return s.apply(lambda x: 4 if x > 52.6 else (3 if x > 47.3 else 0))
 
     def calc_score_taiwan_export_orders(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣外銷訂單_id : 台灣外銷訂單"""
+        """taiwan_export_orders : 台灣外銷訂單"""
         s = self.mv.fetch_taiwan_export_orders(start_date, end_date)
         return s.apply(lambda x: 4 if x > 37625.2 else (3 if x > 31362.6 else 0))
     
     def calc_score_taiwan_industrial_production(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣工業生產指數_id : 台灣工業生產指數"""
+        """taiwan_industrial_production : 台灣工業生產指數"""
         s = self.mv.fetch_taiwan_industrial_production(start_date, end_date)
         return s.apply(lambda x: 4 if x > 104.63 else (3 if x > 89.39 else 0))
 
     def calc_score_taiwan_trade_balance(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣貿易收支_id : 台灣貿易收支"""
+        """taiwan_trade_balance : 台灣貿易收支"""
         s = self.mv.fetch_taiwan_trade_balance(start_date, end_date)
         return s.apply(lambda x: 4 if x > 3.49 else (3 if x > 1.52 else 0))
 
@@ -157,22 +157,22 @@ class MeasureScore:
         return s.apply(lambda x: 4 if x > 328.75 else (3 if x > 279.9 else 0))
 
     def calc_score_taiwan_unemployment_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣失業率_id : 失業率"""
+        """taiwan_unemployment_rate : 失業率"""
         s = self.mv.fetch_taiwan_unemployment_rate(start_date, end_date)
         return s.apply(lambda x: 4 if x < 3.94 else (3 if x < 4.3 else 0))
 
     def calc_score_taiwan_cpi(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣CPI_id : 消費者物價指數"""
+        """taiwan_cpi : 消費者物價指數"""
         s = self.mv.fetch_taiwan_cpi(start_date, end_date)
         return s.apply(lambda x: 4 if x > 1.66 else (3 if x > 0.072 else 0))
 
     def calc_score_taiwan_m1b_m2(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣M1B-M2_id : M1B-M2"""
+        """taiwan_m1b_m2 : M1B-M2"""
         s = self.mv.fetch_taiwan_m1b_m2(start_date, end_date)
         return s.apply(lambda x: 4 if x > 0.03 else (3 if x > -0.01 else 0))
     
     def calc_score_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數乖離率_id : 67日乖離率"""
+        """taiex_bias : 67日乖離率"""
         s = self.mv.fetch_taiex_bias(start_date, end_date)
         return s.apply(lambda x: 4 if x > 2.72 else (3 if x > -2.68 else 0))
 
@@ -182,7 +182,7 @@ class MeasureScore:
         return s.apply(lambda x: 4 if x > 3.0 else (3 if x > -3.94 else 0))
 
     def calc_score_taiex_macd(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數MACD_id : MACD"""
+        """taiex_macd : MACD"""
         s = self.mv.fetch_taiex_macd(start_date, end_date)
         return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
     
@@ -192,22 +192,22 @@ class MeasureScore:
         return s.apply(lambda x: 4 if x > 3.57 else (3 if x > -5.68 else 0))    
     
     def calc_score_taiex_dif(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數DIF_id : DIF"""
+        """taiex_dif : DIF"""
         s = self.mv.fetch_taiex_dif(start_date, end_date)
         return s.apply(lambda x: 4 if x > 283.34 else (3 if x > -29.68 else 0))
     
     def calc_score_taiex_adx(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數ADX_id : ADX"""
+        """taiex_adx : ADX"""
         s = self.mv.fetch_taiex_adx(start_date, end_date)
         return s.apply(lambda x: 4 if x > 19.61 else (3 if x > 12.2 else 0))
 
     def calc_score_taiex_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數本益比_id : 本益比"""
+        """taiex_pe : 本益比"""
         s = self.mv.fetch_taiex_pe(start_date, end_date)
         return s.apply(lambda x: 4 if x < 13.4 else (3 if x < 15.52 else 0))    
 
     def calc_score_tw50_pe(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣50指數本益比_id : 本益比"""
+        """tw50_pe : 本益比"""
         s = self.mv.fetch_tw50_pe(start_date, end_date)
         return s.apply(lambda x: 4 if x < 13.5 else (3 if x < 15.4 else 0))        
     
@@ -227,22 +227,22 @@ class MeasureScore:
         return s.apply(lambda x: 4 if x < 17.64 else (3 if x < 22.2 else 0)) 
     
     def calc_score_taiex_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """加權指數股價淨值比_id : 股價淨值比"""
+        """taiex_pb : 股價淨值比"""
         s = self.mv.fetch_taiex_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.63 else (3 if x < 1.76 else 0)) 
 
     def calc_score_tw50_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣50指數股價淨值比_id : 股價淨值比"""
+        """tw50_pb : 股價淨值比"""
         s = self.mv.fetch_tw50_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.81 else (3 if x < 1.96 else 0)) 
 
     def calc_score_mid100_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣中型100指數股價淨值比_id : 股價淨值比"""
+        """mid100_pb : 股價淨值比"""
         s = self.mv.fetch_mid100_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.36 else (3 if x < 1.55 else 0)) 
     
     def calc_score_highdiv_pb(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
-        """台灣高股息指數股價淨值比_id : 股價淨值比"""
+        """highdiv_pb : 股價淨值比"""
         s = self.mv.fetch_highdiv_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.44 else (3 if x < 1.84 else 0)) 
     

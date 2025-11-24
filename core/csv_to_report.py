@@ -190,19 +190,19 @@ def main():
     
     categories = {
             "總經面指標": [
-                "台灣領先指標_id", "ISM製造業指數_id", "台灣外銷訂單_id", 
-                "台灣工業生產指數_id", "台灣貿易收支_id", "台灣零售銷售_id", 
-                "台灣失業率_id", "台灣CPI_id", "台灣M1B-M2_id"
+                "taiwan_leading_indicator", "ISM製造業指數_id", "taiwan_export_orders", 
+                "taiwan_industrial_production", "taiwan_trade_balance", "taiwan_retail_sales", 
+                "taiwan_unemployment_rate", "taiwan_cpi", "taiwan_m1b_m2"
             ],
             "技術面指標": [
-                "加權指數乖離率_id", "OTC指數乖離率_id", "加權指數MACD_id", 
-                "OTC指數MACD_id", "加權指數DIF_id", "加權指數ADX_id"
+                "taiex_bias", "otc_bias", "taiex_macd", 
+                "otc_macd", "taiex_dif", "taiex_adx"
             ],
             "評價面指標": [
-                "加權指數本益比_id", "台灣50指數本益比_id", "台灣中型100指數本益比_id", 
-                "台灣高股息指數本益比_id", "OTC指數本益比_id", "加權指數股價淨值比_id", 
-                "台灣50指數股價淨值比_id", "台灣中型100指數股價淨值比_id", 
-                "台灣高股息指數股價淨值比_id", "OTC指數股價淨值比_id"
+                "taiex_pe", "tw50_pe", "mid100_pe", 
+                "highdiv_pe", "otc_pe", "taiex_pb", 
+                "tw50_pb", "mid100_pb", 
+                "highdiv_pb", "otc_pb"
             ]
         }
     

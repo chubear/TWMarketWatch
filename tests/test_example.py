@@ -14,7 +14,7 @@ def test_MeasureValue():
     mv = MeasureValue(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"))
    
     # 1) Compute single measure
-    # s = mv.compute_one("台灣M1B-M2_id", "2024-07-01", "2025-12-31")
+    # s = mv.compute_one("taiwan_m1b_m2", "2024-07-01", "2025-12-31")
     # print(s.tail(10))
     
     # 2) Compute all measures
@@ -33,7 +33,7 @@ def test_MeasureScore():
     ms = MeasureScore(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"))
    
     # 1) Compute single measure
-    # s = ms.compute_one("台灣M1B-M2_id", "2024-07-01", "2025-12-31")
+    # s = ms.compute_one("taiwan_m1b_m2", "2024-07-01", "2025-12-31")
     # print(s.tail(10))
     
     # 2) Compute all measures

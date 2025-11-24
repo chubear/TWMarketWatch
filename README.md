@@ -57,7 +57,7 @@ from core.measure_score import MeasureScore
 mv = MeasureValue("data/measure_profile.json")
 
 # 抓取單一指標數值
-series = mv.compute_one("加權指數乖離率_id", "2024-01-01", "2024-12-31")
+series = mv.compute_one("taiex_bias", "2024-01-01", "2024-12-31")
 print(series)
 
 # 計算所有指標並存為 CSV
