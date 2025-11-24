@@ -946,6 +946,8 @@ class MeasureValue:
             }
         
         df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+
+        df = df.div(1000)  # Convert to billions
         if df.empty: 
             raise ValueError("fetch_us_retail_sales returned empty data")
         return df

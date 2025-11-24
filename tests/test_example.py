@@ -55,7 +55,7 @@ def test_CSVToReportGenerator(type: str = "tw"):
     generator = CSVToReportGenerator(
         value_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data",f"measure_value_{type}.csv"),
         score_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data",f"measure_score_{type}.csv"),
-        measure_profile_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data","measure_profile.json"),
+        measure_profile_file=os.path.join(os.path.dirname(os.path.dirname(__file__)),"data",f"measure_profile_{type}.json"),
         frequency='M'
     )
 
@@ -68,5 +68,5 @@ if __name__ == '__main__':
     type ="overseas" 
     # type ="tw"
     test_MeasureValue(type)
-    # test_MeasureScore(type)
-    # test_CSVToReportGenerator(type)
+    test_MeasureScore(type)
+    test_CSVToReportGenerator(type)
