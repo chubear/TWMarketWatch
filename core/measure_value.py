@@ -819,5 +819,278 @@ class MeasureValue:
         if df.empty: 
             raise ValueError("fetch_taiex_pe returned empty data")
         return df
+    #海外指標
+    def fetch_global_gdp_real_growth_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """global_gdp_real_growth_rate : 全球GDP實質成長率"""
+        stock_id = 'IMF40'  
+        field = '數值'
 
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
 
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_global_gdp_real_growth_rate returned empty data")
+        return df 
+    
+    def fetch_us_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_leading_indicator : 美國領先指標"""
+        stock_id = 'USA55'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("us_leading_indicator returned empty data")
+        return df
+    
+    def fetch_us_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_pmi_manufacturing_index : 美國PMI製造業指數"""
+        stock_id = 'USA04'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_pmi_manufacturing_index returned empty data")
+        return df
+    
+    def fetch_us_durable_goods_orders(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_durable_goods_orders : 美國耐久財訂單金額"""
+        stock_id = 'USA85'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_durable_goods_orders returned empty data")
+        return df
+    
+    def fetch_us_retail_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_retail_sales : 美國零售銷售金額"""
+        stock_id = 'USA87'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_retail_sales returned empty data")
+        return df
+    
+    def fetch_us_employment_mom(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_employment_mom : 美國就業月變動人數"""
+        stock_id = 'USA24'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_employment_mom returned empty data")
+        return df
+    
+    def fetch_us_unemployment_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_unemployment_rate : 美國失業率"""
+        stock_id = 'USA20'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("us_unemployment_rate returned empty data")
+        return df
+    
+    def fetch_us_cpi_yoy(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_cpi_yoy : 美國消費者物價指數年增率"""
+        stock_id = 'USA39'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_cpi_yoy returned empty data")
+        return df
+    
+    def fetch_us_existing_home_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_existing_home_sales : 美國成屋銷售量"""
+        stock_id = 'USA33'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_existing_home_sales returned empty data")
+        return df
+
+    def fetch_us_m1_m2(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_m1_m2 : m1-M2"""
+        
+        m1_id = 'USA57'
+        m2_id = 'USA58'
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": m1_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df_m1 = self.fetch_data_from_db(field, sql, self.engine, params=params)
+
+        #取得M2
+        params={
+                "field": field,
+                "ticker": m2_id,
+                "start": start_str,
+                "end": end_str
+            }
+        df_m2 = self.fetch_data_from_db(field, sql, self.engine, params=params)
+
+        #計算m1-M2
+        df = df_m1.copy()
+        df = df_m1 - df_m2
+        if df_m1.empty or df_m2.empty  : 
+            raise ValueError("fetch_us_m1_m2 returned empty data")
+        return df

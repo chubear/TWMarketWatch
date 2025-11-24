@@ -250,3 +250,53 @@ class MeasureScore:
         """OTC 指數股價淨值比_id : 股價淨值比"""
         s = self.mv.fetch_otc_pb(start_date, end_date)
         return s.apply(lambda x: 4 if x < 1.64 else (3 if x < 1.97 else 0))
+    #海外指標
+    def calc_score_global_gdp_real_growth_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """global_gdp_real_growth_rate : 實質GDP成長率"""
+        s = self.mv.fetch_global_gdp_real_growth_rate(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 4.11 else (3 if x > 1.6 else 0))
+    
+    def calc_score_us_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_leading_indicator : 美國領先指標"""
+        s = self.mv.fetch_us_leading_indicator(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 118.3 else (3 if x > 100.98 else 0))
+    
+    def calc_score_us_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_pmi_manufacturing_index : ISM製造業指數"""
+        s = self.mv.fetch_us_pmi_manufacturing_index(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 55.06 else (3 if x > 49.82 else 0))
+    
+    def calc_score_us_durable_goods_orders(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_durable_goods_orders : 美國耐久財訂單"""
+        s = self.mv.fetch_us_durable_goods_orders(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 229818 else (3 if x > 194326 else 0))
+    
+    def calc_score_us_retail_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_retail_sales : 美國零售銷售"""
+        s = self.mv.fetch_us_retail_sales(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 435.2128 else (3 if x > 360.208 else 0))
+    
+    def calc_score_us_employment_mom(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_employment_mom : 美國就業數據(MOM)"""
+        s = self.mv.fetch_us_employment_mom(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 225.2 else (3 if x > -68 else 0))
+    
+    def calc_score_us_unemployment_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_unemployment_rate : 美國失業率"""
+        s = self.mv.fetch_us_unemployment_rate(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 5 else (3 if x < 8.3 else 0))
+    
+    def calc_score_us_cpi_yoy(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_cpi_yoy : 美國CPI年增率"""
+        s = self.mv.fetch_us_cpi_yoy(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 0.02 else (3 if x > 0.01 else 0))
+    
+    def calc_score_us_existing_home_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_existing_home_sales : 成屋銷售量"""
+        s = self.mv.fetch_us_existing_home_sales(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 5.09 else (3 if x > 4.17 else 0))
+    
+    def calc_score_us_m1_m2(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """us_m1_m2 : 美國M1-M2"""
+        s = self.mv.fetch_us_m1_m2(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 0.0506977982101653 else (3 if x > 0.00914105740191716 else 0))
