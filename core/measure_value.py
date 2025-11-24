@@ -80,13 +80,15 @@ class MeasureValue:
             try:
                 s = self.compute_one(measure_id, start_date, end_date)
                 series_dict[measure_id] = s
+                print(s.tail(3))
             except Exception as e:
                 print(f"Error computing {measure_id}: {e}")
 
         if not series_dict:
             return pd.DataFrame()
 
-        df = pd.concat(series_dict.values(), axis=1, join=how)
+        df = pd.concat(series_dict.values(), axis=1, join=how).ffill()
+        print(df.tail(3))
         df = df.groupby(df.index.to_period(frequency)).tail(1)
         df.index = df.index.to_period(frequency).to_timestamp(how='end')
         
@@ -200,7 +202,210 @@ class MeasureValue:
         if df.empty: 
             raise ValueError("fetch_pmi_manufacturing_index returned empty data")
         return df  
+
+    def fetch_taiwan_export_orders(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣外銷訂單_id : 台灣外銷訂單金額"""
+        stock_id = 'TWG01'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
         
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiwan_export_orders returned empty data")
+        return df 
+    
+    def fetch_taiwan_industrial_production(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣工業生產指數_id : 工業生產指數-非季節調整"""
+        stock_id = '18860'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiwan_industrial_production returned empty data")
+        return df   
+
+
+    def fetch_taiwan_trade_balance(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣貿易收支_id : 貿易收支出入超"""
+        stock_id = '18700'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        df = df.div(1000)  # Convert to billions
+
+        if df.empty: 
+            raise ValueError("fetch_taiwan_trade_balance returned empty data")
+        return df   
+    
+    def fetch_taiwan_retail_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣零售銷售_id : 台灣零售銷售金額"""
+
+        stock_id = '44220'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        df = df.div(1000)  # Convert to billions
+
+        if df.empty: 
+            raise ValueError("fetch_taiwan_trade_balance returned empty data")
+        return df   
+    
+    def fetch_taiwan_unemployment_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣失業率_id : 失業率"""
+        stock_id = '19400'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiwan_unemployment_rate returned empty data")
+        return df
+
+    def fetch_taiwan_cpi(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣CPI_id : 消費者物價指數"""
+        stock_id = '18100'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_taiwan_cpi returned empty data")
+        return df
+    
+    def fetch_taiwan_m1b_m2(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣M1B-M2_id : M1B-M2"""
+        
+        m1b_id = '12301'
+        m2_id = '12501'
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": m1b_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df_m1b = self.fetch_data_from_db(field, sql, self.engine, params=params)
+
+        #取得M2
+        params={
+                "field": field,
+                "ticker": m2_id,
+                "start": start_str,
+                "end": end_str
+            }
+        df_m2 = self.fetch_data_from_db(field, sql, self.engine, params=params)
+
+        #計算M1B-M2
+        df = df_m1b.copy()
+        df = df_m1b - df_m2
+        if df_m1b.empty or df_m2.empty  : 
+            raise ValueError("fetch_taiwan_m1b_m2 returned empty data")
+        return df
+
     def fetch_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 60日乖離率"""
         stock_id = 'TWA00'  # TAIEX

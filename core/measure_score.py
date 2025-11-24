@@ -86,7 +86,7 @@ class MeasureScore:
         if not series_dict:
             return pd.DataFrame()
 
-        df = pd.concat(series_dict.values(), axis=1, join=how)
+        df = pd.concat(series_dict.values(), axis=1, join=how).ffill()
         df = df.groupby(df.index.to_period(frequency)).tail(1)
         df.index = df.index.to_period(frequency).to_timestamp(how='end')
         
@@ -136,6 +136,41 @@ class MeasureScore:
         s = self.mv.fetch_pmi_manufacturing_index(start_date, end_date)
         return s.apply(lambda x: 4 if x > 52.6 else (3 if x > 47.3 else 0))
 
+    def calc_score_taiwan_export_orders(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣外銷訂單_id : 台灣外銷訂單"""
+        s = self.mv.fetch_taiwan_export_orders(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 37625.2 else (3 if x > 31362.6 else 0))
+    
+    def calc_score_taiwan_industrial_production(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣工業生產指數_id : 台灣工業生產指數"""
+        s = self.mv.fetch_taiwan_industrial_production(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 104.63 else (3 if x > 89.39 else 0))
+
+    def calc_score_taiwan_trade_balance(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣貿易收支_id : 台灣貿易收支"""
+        s = self.mv.fetch_taiwan_trade_balance(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 3.49 else (3 if x > 1.52 else 0))
+
+    def calc_score_taiwan_retail_sales(self, start_date: DateLike, end_date: DateLike) -> pd.Series:    
+        """台灣零售銷售額_id : 台灣零售銷售額"""
+        s = self.mv.fetch_taiwan_retail_sales(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 328.75 else (3 if x > 279.9 else 0))
+
+    def calc_score_taiwan_unemployment_rate(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣失業率_id : 失業率"""
+        s = self.mv.fetch_taiwan_unemployment_rate(start_date, end_date)
+        return s.apply(lambda x: 4 if x < 3.94 else (3 if x < 4.3 else 0))
+
+    def calc_score_taiwan_cpi(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣CPI_id : 消費者物價指數"""
+        s = self.mv.fetch_taiwan_cpi(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 1.66 else (3 if x > 0.072 else 0))
+
+    def calc_score_taiwan_m1b_m2(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """台灣M1B-M2_id : M1B-M2"""
+        s = self.mv.fetch_taiwan_m1b_m2(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 0.03 else (3 if x > -0.01 else 0))
+    
     def calc_score_taiex_bias(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
         """加權指數乖離率_id : 67日乖離率"""
         s = self.mv.fetch_taiex_bias(start_date, end_date)
