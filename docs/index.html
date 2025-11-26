@@ -2,12 +2,52 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
-<title>台股觀測指標</title>
+<title>市場觀測指標</title>
 <style>
 body { 
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif; 
     margin: 16px; 
 }
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background: #f4f6f8;
+    border: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.tab-button:hover {
+    background: #e8ebed;
+}
+
+.tab-button.active {
+    background: #fff;
+    border-bottom: 2px solid #fff;
+    margin-bottom: -2px;
+    font-weight: 600;
+    color: #0066cc;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
 .controls { 
     margin-bottom: 12px; 
     display:flex; 
@@ -16,20 +56,20 @@ body {
     flex-wrap:wrap; 
 }
 
-table#report-table { 
+.report-table { 
     border-collapse: collapse; 
     width:100%; 
     table-layout: fixed; 
     word-wrap: break-word; 
     font-size:0.95rem; 
 }
-table#report-table th, table#report-table td { 
+.report-table th, .report-table td { 
     border:1px solid #ddd; 
     padding:6px 8px; 
     vertical-align:middle; 
     text-align:center; 
 }
-table#report-table thead th { 
+.report-table thead th { 
     background:#f4f6f8; 
     font-weight:600; 
     position: sticky; 
@@ -37,16 +77,16 @@ table#report-table thead th {
     z-index:2; 
     backdrop-filter: blur(2px); 
 }
-table#report-table tbody tr:nth-child(even) { 
+.report-table tbody tr:nth-child(even) { 
     background:#fafafa; 
 }
-table#report-table th:nth-child(2),
-table#report-table td:nth-child(2) {
+.report-table th:nth-child(2),
+.report-table td:nth-child(2) {
     width: 15%; /* 指標名稱欄位較大 */
 }
 
-table#report-table th:nth-child(3),
-table#report-table td:nth-child(3) {
+.report-table th:nth-child(3),
+.report-table td:nth-child(3) {
     width: 5%; /* 單位欄位較小 */
 }
 
@@ -55,88 +95,77 @@ table#report-table td:nth-child(3) {
         flex-direction:column; 
         align-items:stretch; 
     } 
-    table#report-table { 
+    .report-table { 
         font-size:0.85rem; 
     } 
+    .tab-button {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
 }
 </style>
 </head>
 <body>
 
-<div class="controls">
-    <button id="reload">重新載入資料</button>
-    <input id="api-url" type="text" value="https://api1.dottdot.com/api/reports/tw_market_watch" style="flex:1; min-width:300px; padding:4px 8px;" />
-    <button id="download-csv">下載 CSV</button>
+<div class="tabs">
+    <button class="tab-button active" data-tab="tw">台股市場</button>
+    <button class="tab-button" data-tab="overseas">海外市場</button>
 </div>
 
-<table id="report-table" aria-live="polite">
-    <thead></thead>
-    <tbody><tr><td colspan="20">等待 CSV 讀取中...</td></tr></tbody>
-</table>
+<div id="tw-tab" class="tab-content active">
+    <div class="controls">
+        <button class="reload-btn" data-market="tw">重新載入資料</button>
+        <button class="download-csv-btn" data-market="tw">下載 CSV</button>
+    </div>
+    <table class="report-table" data-market="tw" aria-live="polite">
+        <thead></thead>
+        <tbody><tr><td colspan="20">等待資料讀取中...</td></tr></tbody>
+    </table>
+</div>
+
+<div id="overseas-tab" class="tab-content">
+    <div class="controls">
+        <button class="reload-btn" data-market="overseas">重新載入資料</button>
+        <button class="download-csv-btn" data-market="overseas">下載 CSV</button>
+    </div>
+    <table class="report-table" data-market="overseas" aria-live="polite">
+        <thead></thead>
+        <tbody><tr><td colspan="20">等待資料讀取中...</td></tr></tbody>
+    </table>
+</div>
 
 <script>
-/* 簡單 CSV 解析器（支援雙引號內含逗號與換行） */
-function parseCSV(text, delimiter = ',') {
-    const rows = [];
-    let i = 0, len = text.length;
-    let field = '', row = [], inQuotes = false;
-    while (i < len) {
-        const ch = text[i];
-        if (inQuotes) {
-            if (ch === '"') {
-                if (i + 1 < len && text[i + 1] === '"') {
-                    field += '"';
-                    i += 2;
-                } else {
-                    inQuotes = false;
-                    i++;
-                }
-            } else {
-                field += ch;
-                i++;
-            }
-        } else {
-            if (ch === '"') {
-                inQuotes = true;
-                i++;
-            } else if (ch === delimiter) {
-                row.push(field);
-                field = '';
-                i++;
-            } else if (ch === '\r') {
-                i++;
-            } else if (ch === '\n') {
-                row.push(field);
-                rows.push(row);
-                row = [];
-                field = '';
-                i++;
-            } else {
-                field += ch;
-                i++;
-            }
-        }
+const API_URLS = {
+    tw: 'https://api1.dottdot.com/api/reports/tw_market_watch',
+    overseas: 'https://api1.dottdot.com/api/reports/overseas_market_watch'
+};
+
+/* 從 API JSON 轉換成表格資料結構 */
+function jsonToRows(jsonData) {
+    if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
+        return [];
     }
-    if (field !== '' || inQuotes || row.length > 0) {
-        row.push(field);
+    
+    // 取得所有欄位名稱（從第一筆資料）
+    const firstItem = jsonData[0];
+    const headers = Object.keys(firstItem);
+    
+    // 建立表頭
+    const rows = [headers];
+    
+    // 建立資料列
+    jsonData.forEach(item => {
+        const row = headers.map(header => {
+            const value = item[header];
+            return value !== null && value !== undefined ? String(value) : '';
+        });
         rows.push(row);
-    }
+    });
+    
     return rows;
 }
 
-function guessDelimiter(text) {
-    const firstLine = (text.split(/\r?\n/)[0] || '');
-    const candidates = [',',';','\t','|'];
-    let best = ',', bestCount = -1;
-    candidates.forEach(c => {
-        const count = (firstLine.split(c).length - 1);
-        if (count > bestCount) { bestCount = count; best = c; }
-    });
-    return best;
-}
-
-function buildTable(rows) {
-    const table = document.getElementById('report-table');
+function buildTable(table, rows) {
     const thead = table.querySelector('thead');
     const tbody = table.querySelector('tbody');
     thead.innerHTML = '';
@@ -172,32 +201,10 @@ function buildTable(rows) {
     }
 }
 
-/* 從 API JSON 轉換成表格資料結構 */
-function jsonToRows(jsonData) {
-    if (!jsonData || !Array.isArray(jsonData) || jsonData.length === 0) {
-        return [];
-    }
+async function loadFromAPI(market) {
+    const url = API_URLS[market];
+    const table = document.querySelector(`.report-table[data-market="${market}"]`);
     
-    // 取得所有欄位名稱（從第一筆資料）
-    const firstItem = jsonData[0];
-    const headers = Object.keys(firstItem);
-    
-    // 建立表頭
-    const rows = [headers];
-    
-    // 建立資料列
-    jsonData.forEach(item => {
-        const row = headers.map(header => {
-            const value = item[header];
-            return value !== null && value !== undefined ? String(value) : '';
-        });
-        rows.push(row);
-    });
-    
-    return rows;
-}
-
-async function loadFromAPI(url) {
     try {
         const res = await fetch(url, {
             cache: "no-store",
@@ -211,22 +218,20 @@ async function loadFromAPI(url) {
         // 檢查 API 回應格式
         if (json.status === 'success' && Array.isArray(json.data)) {
             const rows = jsonToRows(json.data);
-            buildTable(rows);
+            buildTable(table, rows);
         } else {
             throw new Error('API 回應格式不正確');
         }
     } catch (err) {
         console.error(err);
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = '<tr><td colspan="20">載入失敗：' + err.message + '</td></tr>';
     }
 }
 
-document.getElementById('download-csv').addEventListener('click', async () => {
-    const url = document.getElementById('api-url').value.trim();
-    if (!url) {
-        console.error('請輸入有效的 API URL');
-        return;
-    }
-
+async function downloadCSV(market) {
+    const url = API_URLS[market];
+    
     try {
         const res = await fetch(url, {
             cache: "no-store",
@@ -242,9 +247,9 @@ document.getElementById('download-csv').addEventListener('click', async () => {
             const csvContent = rows.map(e => e.join(",")).join("\n");
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'report.csv');
+            const downloadUrl = URL.createObjectURL(blob);
+            link.setAttribute('href', downloadUrl);
+            link.setAttribute('download', `${market}_market_report.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -254,22 +259,44 @@ document.getElementById('download-csv').addEventListener('click', async () => {
         }
     } catch (err) {
         console.error('下載失敗：' + err.message);
+        alert('下載失敗：' + err.message);
     }
+}
+
+// 分頁切換
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+        const targetTab = button.getAttribute('data-tab');
+        
+        // 更新分頁按鈕樣式
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // 顯示對應的分頁內容
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${targetTab}-tab`).classList.add('active');
+    });
 });
 
-document.getElementById('reload').addEventListener('click', () => {
-    const url = document.getElementById('api-url').value.trim();
-    if (url) {
-        loadFromAPI(url);
-    }
+// 重新載入按鈕
+document.querySelectorAll('.reload-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        const market = button.getAttribute('data-market');
+        loadFromAPI(market);
+    });
 });
 
-/* 頁面載入時自動從 API 載入資料 */
+// 下載 CSV 按鈕
+document.querySelectorAll('.download-csv-btn').forEach(button => {
+    button.addEventListener('click', () => {
+        const market = button.getAttribute('data-market');
+        downloadCSV(market);
+    });
+});
+
+/* 頁面載入時自動載入台股資料 */
 window.addEventListener('load', () => {
-    const url = document.getElementById('api-url').value.trim();
-    if (url) {
-        loadFromAPI(url);
-    }
+    loadFromAPI('tw');
 });
 </script>
 
