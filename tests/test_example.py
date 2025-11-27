@@ -14,21 +14,21 @@ def test_MeasureValue(type: str = "tw"):
     mv = MeasureValue(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data",f"measure_profile_{type}.json"))
    
     # 1) Compute single measure
-    # s = mv.compute_one("global_gdp_real_growth_rate", "2024-07-01", "2025-12-31")
-    # print(s.tail(10))
+    s = mv.compute_one("eu_economic_sentiment", "2024-07-01", "2025-12-31")
+    print(s.tail(10))
     
     # 2) Compute all measures
     # all_df = mv.compute_all("2024-07-01", "2025-12-31", frequency="Q")
     # print(all_df)  
 
     # 3) Compute all and output to CSV
-    mv.to_csv(
-        start_date="2024-01-01",
-        end_date="2025-12-31",
-        output_path=f"data/measure_value_{type}.csv",
-        frequency="M",
-        date_format="%Y-%m-%d",
-    )
+    # mv.to_csv(
+    #     start_date="2024-01-01",
+    #     end_date="2025-12-31",
+    #     output_path=f"data/measure_value_{type}.csv",
+    #     frequency="M",
+    #     date_format="%Y-%m-%d",
+    # )
 def test_MeasureScore(type: str = "tw"):
     ms = MeasureScore(os.path.join(os.path.dirname(os.path.dirname(__file__)),"data",f"measure_profile_{type}.json"))
    
@@ -68,5 +68,5 @@ if __name__ == '__main__':
     type ="overseas" 
     # type ="tw"
     test_MeasureValue(type)
-    test_MeasureScore(type)
-    test_CSVToReportGenerator(type)
+    # test_MeasureScore(type)
+    # test_CSVToReportGenerator(type)

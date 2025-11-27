@@ -68,5 +68,27 @@
     "category": "美國",
     "func_value": "fetch_us_m1_m2",
     "func_score": "calc_score_us_m1_m2"
-  }  
+  },  
+  "eu_leading_indicator": {
+    "name": "歐洲領先指標",
+    "unit": "值",
+    "category": "歐洲",
+    "func_value": "fetch_eu_leading_indicator",
+    "func_score": "calc_score_eu_leading_indicator"
+  },
+  "eu_pmi_manufacturing_index": {
+    "name": "歐洲ISM製造業指數",
+    "unit": "值",
+    "category": "歐洲",
+    "func_value": "fetch_eu_pmi_manufacturing_index",
+    "func_score": "calc_score_eu_pmi_manufacturing_index"
+  },
+  
+  "eu_economic_sentiment": {
+    "name": "歐洲經濟景氣指標",
+    "unit": "值",
+    "category": "歐洲",
+    "func_value": "fetch_eu_economic_sentiment",
+    "func_score": "calc_score_eu_economic_sentiment"
+  }
 }

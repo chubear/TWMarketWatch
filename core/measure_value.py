@@ -8,7 +8,7 @@ import pandas as pd
 from .dbconfig import default_engine
 from .config import Config
 from .data_fetcher import DataFetcher, DateLike
-
+import akshare as ak
 
 class MeasureValue:
     """
@@ -1095,4 +1095,76 @@ class MeasureValue:
         df = df_m1 - df_m2
         if df_m1.empty or df_m2.empty  : 
             raise ValueError("fetch_us_m1_m2 returned empty data")
+        return df
+    
+    def fetch_eu_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_leading_indicator : 歐洲領先指標"""
+        stock_id = 'EUR00'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("eu_leading_indicator returned empty data")
+        return df
+    
+    def fetch_eu_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_pmi_manufacturing_index : 歐洲PMI製造業指數"""
+        stock_id = 'EUR06'  
+        field = '數值'
+
+        start_str = pd.to_datetime(start_date).strftime('%Y%m')
+        end_str = pd.to_datetime(end_date).strftime('%Y%m')
+
+        sql = f"""
+            SELECT CONCAT(年月,'01') as 日期, {field}
+            FROM `md_cm_eco_economics`
+            WHERE 代號 = :ticker AND 年月 BETWEEN :start AND :end
+            ORDER BY 年月 asc
+        """
+        params={
+                "field": field,
+                "ticker": stock_id,
+                "start": start_str,
+                "end": end_str
+            }
+        
+        df = self.fetch_data_from_db(field, sql, self.engine, params=params)
+        if df.empty: 
+            raise ValueError("fetch_us_pmi_manufacturing_index returned empty data")
+        return df
+    
+    def fetch_eu_economic_sentiment(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_economic_sentiment : 歐洲經濟景氣指數""" 
+        df = ak.macro_euro_zew_economic_sentiment()
+        df.set_index("日期", inplace=True)
+        df.index = pd.to_datetime(df.index)
+        df = df.loc[start_date:end_date,'今值']
+        if df.empty: 
+            raise ValueError("fetch_eu_economic_sentiment returned empty data")
+        return df
+
+    def fetch_eu_economic_sentiment(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_economic_sentiment : 歐洲經濟景氣指數""" 
+        df = ak.macro_euro_zew_economic_sentiment()
+        df.set_index("日期", inplace=True)
+        df.index = pd.to_datetime(df.index)
+        df = df.loc[start_date:end_date,'今值']
+        if df.empty: 
+            raise ValueError("fetch_eu_economic_sentiment returned empty data")
         return df

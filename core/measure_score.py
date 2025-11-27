@@ -300,3 +300,18 @@ class MeasureScore:
         """us_m1_m2 : 美國M1-M2"""
         s = self.mv.fetch_us_m1_m2(start_date, end_date)
         return s.apply(lambda x: 4 if x > 0.0506977982101653 else (3 if x > 0.00914105740191716 else 0))
+    
+    def calc_score_eu_leading_indicator(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_leading_indicator : 歐洲領先指標"""
+        s = self.mv.fetch_eu_leading_indicator(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 100 else (3 if x > 95 else 0))
+    
+    def calc_score_eu_pmi_manufacturing_index(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_pmi_manufacturing_index : 歐洲PMI製造業指數"""
+        s = self.mv.fetch_eu_pmi_manufacturing_index(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 51.52 else (3 if x > 49 else 0))
+    
+    def calc_score_eu_economic_sentiment(self, start_date: DateLike, end_date: DateLike) -> pd.Series:
+        """eu_economic_sentiment : 歐洲經濟景氣指數"""
+        s = self.mv.fetch_eu_economic_sentiment(start_date, end_date)
+        return s.apply(lambda x: 4 if x > 0.4 else (3 if x > -0.87 else 0))
